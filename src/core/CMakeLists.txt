@@ -1,5 +1,6 @@
 add_library(ember_core STATIC
     logger.cpp
+    math.h
 )
 
 target_include_directories(ember_core PUBLIC
