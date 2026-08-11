@@ -21,7 +21,20 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 add_subdirectory(src/core)
 add_subdirectory(src/platform)
 add_subdirectory(src/graphics)
-add_subdirectory(src/application)
+
+# Create main executable
+add_executable(ember
+    src/main.cpp
+    src/application.cpp
+)
+
+target_include_directories(ember PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(ember PRIVATE
+    ember_core
+    ember_platform
+    ember_graphics
+)
 
 # Enable testing
 enable_testing()
