@@ -1,12 +1,9 @@
-add_library(ember_platform STATIC)
+add_library(ember_platform STATIC
+    sdl2/sdl2_window.cpp
+)
 
 # Include SDL2
 find_package(SDL2 REQUIRED)
-
-# SDL2 implementation
-target_sources(ember_platform PRIVATE
-    sdl2/sdl2_window.cpp
-)
 
 target_include_directories(ember_platform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
