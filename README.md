@@ -1,14 +1,16 @@
 # Ember Engine
 
-A modern C++ graphics engine with Vulkan support and optional OpenXR VR capabilities.
+A modern C++ graphics engine with Vulkan support and simultaneous Desktop + VR rendering via OpenXR.
 
 ## Features
 
 - **Vulkan Rendering**: Modern GPU-accelerated graphics using Vulkan API
-- **OpenXR VR Support**: Cross-platform VR rendering (optional, in development)
+- **Shared Vulkan Context**: Single graphics device shared between Desktop and VR renderers
+- **Simultaneous Desktop + VR**: Render to monitor and VR headset at the same time
+- **OpenXR VR Support**: Cross-platform VR rendering (optional)
 - **SDL2 Window Management**: Cross-platform window and input handling
 - **Layered Architecture**: Clean separation between core, platform, and graphics layers
-- **Sample Application**: Ready-to-build example demonstrating engine capabilities
+- **Sample Applications**: Desktop and VR examples demonstrating engine capabilities
 
 ## Dependencies
 
@@ -60,13 +62,18 @@ cmake --build . --config Debug
 ./samples/ember_sample
 ```
 
-### With OpenXR Support
+### Desktop + VR Build (With OpenXR)
 
 ```bash
 mkdir build && cd build
 cmake .. -DEMBER_WITH_OPENXR=ON
 cmake --build . --config Debug
+
+# Run desktop sample
 ./samples/ember_sample
+
+# Run VR sample (requires VR headset or OpenXR runtime)
+./samples/ember_vr_sample
 ```
 
 ## Project Structure
@@ -81,13 +88,21 @@ ember/
 │   │   ├── renderer.h     # Abstract renderer interface
 │   │   ├── renderer_config.h  # Configuration structs
 │   │   ├── vulkan/        # Vulkan renderer
+│   │   │   ├── vulkan_context.h      # Shared Vulkan context
+│   │   │   ├── vulkan_renderer.h     # Desktop renderer
+│   │   │   ├── vulkan_utils.h        # Common utilities
+│   │   │   └── ...
 │   │   └── openxr/        # OpenXR VR renderer (optional)
+│   │       ├── openxr_context.h
+│   │       ├── openxr_session.h
+│   │       ├── openxr_renderer.h
+│   │       └── ...
 │   ├── application.h      # Main application class
 │   ├── application.cpp
 │   └── CMakeLists.txt
 ├── samples/               # Sample applications
-│   ├── sample_main.cpp
-│   ├── sample_scene.h
+│   ├── sample_main.cpp           # Desktop sample
+│   ├── sample_vr_main.cpp        # VR sample (with OpenXR)
 │   └── CMakeLists.txt
 ├── CMakeLists.txt
 ├── README.md
@@ -95,6 +110,32 @@ ember/
 ```
 
 ## Architecture
+
+### Shared Vulkan Context (Option B)
+
+The graphics layer implements a **shared VulkanContext** architecture enabling simultaneous Desktop + VR rendering:
+
+```
+Application (owns VulkanContext lifecycle)
+    │
+    ├─ Shared VulkanContext
+    │   ├─ VkInstance (single)
+    │   ├─ VkDevice (single)
+    │   └─ Graphics Queue (single)
+    │
+    ├─ VulkanRenderer (Desktop)
+    │   └─ Desktop swapchain
+    │
+    └─ OpenXRRenderer (VR - optional)
+        └─ OpenXR swapchains (stereo)
+```
+
+**Benefits:**
+- Single Vulkan initialization and device creation
+- No resource duplication
+- Shared graphics queue for both renderers
+- Independent swapchains for desktop window and VR headset
+- Optional VR support (can run desktop-only if needed)
 
 ### Core Layer (`src/core/`)
 - **Logger**: Debug and info logging with timestamp support
@@ -106,25 +147,43 @@ ember/
 
 ### Graphics Layer (`src/graphics/`)
 - **Abstract Renderer Interface**: Unified API for multiple backends
-- **Vulkan Renderer**: GPU-accelerated desktop rendering
-- **OpenXR Renderer** (optional): Stereoscopic VR rendering
+- **Vulkan Renderer**: GPU-accelerated desktop rendering with shared context
+- **Vulkan Utils**: Common utilities (memory management, image/buffer creation)
+- **OpenXR Renderer** (optional): Stereoscopic VR rendering using shared context
 
 ### Application Layer
-- **Application Class**: Coordinates window, renderer, and lifecycle
-- **Sample Application**: Demonstrates engine usage
+- **Application Class**: Coordinates window, shared graphics context, and renderers
+- **Sample Applications**: Desktop and VR examples
 
-## OpenXR Integration (In Development)
+## OpenXR Integration
 
-Ember is being extended with comprehensive OpenXR support for cross-platform VR development. See [GRAPHICS_LAYER.md](GRAPHICS_LAYER.md) for detailed OpenXR documentation.
+Ember supports cross-platform VR development via OpenXR. See [GRAPHICS_LAYER.md](GRAPHICS_LAYER.md) for detailed documentation.
 
 ### Current Status
-- ✅ Project structure and CMake integration
-- ✅ Abstract renderer interface with VR methods
-- ✅ OpenXR context and session classes
-- ✅ Header files and stub implementations
-- ⏳ Swapchain management (TODO)
-- ⏳ Full frame rendering loop (TODO)
-- ⏳ Input system integration (TODO)
+- ✅ **Phase 1: Foundation** - COMPLETE
+  - [x] Project structure and CMake integration
+  - [x] Abstract renderer interface with VR methods
+  - [x] Shared VulkanContext (enable_shared_from_this pattern)
+  - [x] OpenXR context and session classes
+  - [x] VulkanUtils common helpers module
+  - [x] Sample applications (desktop + VR)
+  - [x] Comprehensive documentation
+
+- ⏳ **Phase 2: Swapchain Management** - TODO
+  - [ ] Desktop swapchain creation
+  - [ ] OpenXR swapchain creation and image management
+  - [ ] Framebuffer allocation
+
+- ⏳ **Phase 3: Frame Rendering** - TODO
+  - [ ] Frame timing (xrWaitFrame)
+  - [ ] View pose prediction
+  - [ ] Projection matrix calculation
+  - [ ] Frame submission (xrBeginFrame/xrEndFrame)
+
+- ⏳ **Phase 4: Input System** - TODO
+  - [ ] Controller action mapping
+  - [ ] Hand tracking
+  - [ ] Gesture recognition
 
 ### Supported VR Platforms (Target)
 - Meta Quest 2/3/Pro
@@ -135,7 +194,7 @@ Ember is being extended with comprehensive OpenXR support for cross-platform VR 
 
 ## Usage Examples
 
-### Desktop Rendering
+### Desktop Rendering Only
 ```cpp
 #include "application.h"
 
@@ -145,7 +204,7 @@ int main() {
     Application app;
     
     platform::WindowConfig windowConfig{
-        .title = "Ember Application",
+        .title = "Ember Desktop App",
         .width = 1280,
         .height = 720,
         .vsync = true
@@ -154,7 +213,8 @@ int main() {
     graphics::RendererConfig rendererConfig{
         .width = 1280,
         .height = 720,
-        .enableValidation = true
+        .enableValidation = true,
+        .enableVR = false  // Desktop only
     };
     
     if (!app.initialize(windowConfig, rendererConfig)) {
@@ -167,23 +227,35 @@ int main() {
 }
 ```
 
-### VR Rendering (With OpenXR)
+### Simultaneous Desktop + VR Rendering
 ```cpp
 graphics::RendererConfig rendererConfig{
-    .enableVR = true,
+    .width = 1280,
+    .height = 720,
+    .enableValidation = true,
+    .enableVR = true,           // Enable VR
     .xrAppName = "My VR App"
 };
 
 if (app.initialize(windowConfig, rendererConfig)) {
-    // VR rendering in main loop
+    // Both desktop and VR renderers initialized with shared context
+    
+    // Desktop rendering
     auto renderer = app.getRenderer();
-    if (renderer->supportsVR()) {
+    renderer->beginFrame();
+    // Render scene
+    renderer->endFrame();
+    renderer->present();
+    
+    // VR rendering (to headset)
+    auto vrRenderer = app.getVRRenderer();
+    if (vrRenderer && vrRenderer->supportsVR()) {
         uint32_t viewCount = 2;
         graphics::EyeView views[2];
-        if (renderer->beginVRFrame(viewCount, views)) {
+        if (vrRenderer->beginVRFrame(viewCount, views)) {
             // Render for left eye: views[0]
             // Render for right eye: views[1]
-            renderer->endVRFrame();
+            vrRenderer->endVRFrame();
         }
     }
 }
@@ -199,7 +271,7 @@ if (app.initialize(windowConfig, rendererConfig)) {
 ### OpenXR Not Found
 - Install OpenXR SDK from [Khronos GitHub](https://github.com/KhronosGroup/OpenXR-SDK)
 - Set `OpenXR_DIR` if CMake can't find it: `cmake .. -DOpenXR_DIR=/path/to/openxr`
-- Use `-DEMBER_WITH_OPENXR=OFF` to disable VR support
+- Use `-DEMBER_WITH_OPENXR=OFF` to disable VR support (still get desktop rendering)
 
 ### SDL2 Not Found
 - On Linux: `sudo apt-get install libsdl2-dev`
@@ -211,11 +283,19 @@ if (app.initialize(windowConfig, rendererConfig)) {
 - Update graphics drivers
 - Run `vulkaninfo` to diagnose Vulkan setup
 
+### VR Runtime Not Found
+- Ensure a compatible VR runtime is installed
+- Windows: Install SteamVR or Oculus software
+- Check `XR_RUNTIME_JSON` environment variable
+- Test with OpenXR runtime diagnostic tools
+
 ## Future Development
 
-- ✅ OpenXR foundation (in progress)
+- ✅ Shared VulkanContext architecture
 - ⏳ Swapchain and frame rendering
 - ⏳ Input system (controllers, hand tracking)
+- ⏳ Dynamic resolution scaling
+- ⏳ Foveated rendering
 - ⏳ Physics integration
 - ⏳ Audio system
 - ⏳ Scene serialization
@@ -240,4 +320,5 @@ Contributions are welcome! Please:
 - [Vulkan Guide](https://vulkan-tutorial.com/)
 - [OpenXR Specification](https://www.khronos.org/openxr/)
 - [OpenXR SDK](https://github.com/KhronosGroup/OpenXR-SDK)
+- [OpenXR Best Practices](https://developer.oculus.com/resources/)
 - [VR Development Best Practices](https://developer.oculus.com/design/)
