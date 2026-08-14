@@ -51,7 +51,18 @@ Download and install:
 - [GLM](https://github.com/g-truc/glm/releases)
 - [OpenXR SDK](https://github.com/KhronosGroup/OpenXR-SDK) (optional)
 
+## Prerequisites
+
+- **Vulkan SDK**: Download from [LunarG](https://vulkan.lunarg.com/)
+  - Windows: Run installer
+  - Linux: `sudo apt install vulkan-sdk` or equivalent
+  - macOS: Install MoltenVK
+
 ## Building
+
+1. Install dependencies: `vcpkg install`
+2. Configure: `cmake --preset windows-debug` (or linux-debug)
+3. Build: `cmake --build build`
 
 ### Desktop Build (Vulkan only)
 
