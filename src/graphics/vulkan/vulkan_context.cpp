@@ -1,6 +1,4 @@
 #include "vulkan_context.h"
-#include "core/logger.h"
-#include "platform/window.h"
 
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -99,10 +97,6 @@ void VulkanContext::shutdown() {
     initialized_ = false;
 
     EMBER_LOG_INFO("VulkanContext shutdown complete");
-}
-
-std::shared_ptr<VulkanContext> VulkanContext::getShared() {
-    return shared_from_this();
 }
 
 bool VulkanContext::createInstance() {

@@ -30,6 +30,7 @@ private:
     bool createLogicalDevice();
     bool createSurface(platform::Window* window);
 
+    bool initialized_ = false;
     RendererConfig config_;
     VkInstance instance_ = VK_NULL_HANDLE;
     VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;

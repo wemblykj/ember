@@ -21,3 +21,10 @@ target_link_libraries(ember_graphics PUBLIC
 )
 
 target_compile_features(ember_graphics PRIVATE cxx_std_17)
+
+target_precompile_headers(ember_graphics PRIVATE
+    <string>
+    <ember_core.h>
+    <ember_platform.h>
+)
+

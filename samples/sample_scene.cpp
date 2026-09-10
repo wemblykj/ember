@@ -1,7 +1,10 @@
+#if 0
+
 #include "sample_scene.h"
 #include "core/logger.h"
 
 namespace ember::samples {
+
 
 SampleScene::SampleScene() {
 }
@@ -60,3 +63,5 @@ void SampleScene::shutdown() {
 }
 
 }  // namespace ember::samples
+
+#endif

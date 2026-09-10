@@ -1,6 +1,6 @@
 #include "application.h"
-#include "platform/sdl2/sdl2_window.h"
-#include "graphics/vulkan/vulkan_renderer.h"
+#include "platform/sdl3/sdl3_window.h"
+//#include "graphics/vulkan/vulkan_renderer.h"
 
 namespace ember {
 
@@ -18,18 +18,20 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
     EMBER_LOG_INFO("Initializing Ember Application...");
 
     // Create window
-    window_ = platform::sdl2::createWindow(windowConfig);
+    window_ = platform::sdl3::createWindow(windowConfig);
     if (!window_) {
         EMBER_LOG_ERROR("Failed to create window");
         return false;
     }
 
     // Create renderer
+    /*
     renderer_ = graphics::vulkan::createRenderer(rendererConfig, window_.get());
     if (!renderer_) {
         EMBER_LOG_ERROR("Failed to create renderer");
         return false;
     }
+	*/
 
     isRunning_ = true;
 
@@ -45,10 +47,11 @@ void Application::run() {
     while (isRunning_ && !window_->shouldClose()) {
         window_->pollEvents();
 
+        /*
         renderer_->beginFrame();
         // Application logic goes here
         renderer_->endFrame();
-        renderer_->present();
+        renderer_->present();*/
     }
 
     EMBER_LOG_INFO("Application main loop ended");
@@ -59,10 +62,12 @@ void Application::shutdown() {
 
     isRunning_ = false;
 
+    /*
     if (renderer_) {
         renderer_->shutdown();
         renderer_.reset();
     }
+	*/
 
     if (window_) {
         window_.reset();

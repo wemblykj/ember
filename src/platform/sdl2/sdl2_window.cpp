@@ -12,9 +12,28 @@ SDL2Window::SDL2Window(const WindowConfig& config)
         return;
     }
 
-    uint32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN;
-    if (config.fullscreen) {
+    uint32_t flags = SDL_WINDOW_SHOWN;
+    if (hasFeature(config.features, WindowFeature::Fullscreen)) {
         flags |= SDL_WINDOW_FULLSCREEN;
+    }
+
+    switch (config.api) {
+    case graphics::GraphicsAPI::Vulkan:
+        flags |= SDL_WINDOW_VULKAN;
+        break;
+    case graphics::GraphicsAPI::OpenGL:
+        flags |= SDL_WINDOW_OPENGL;
+        break;
+    case graphics::GraphicsAPI::DirectX12:
+        // SDL doesn't have a DirectX flag; backends may need native handle
+        break;
+    case graphics::GraphicsAPI::Metal:
+        flags |= SDL_WINDOW_METAL;
+        break;
+    case graphics::GraphicsAPI::Default:
+    default:
+        // optionally prefer Vulkan when available: handled in higher-level init
+        break;
     }
 
     window_ = SDL_CreateWindow(

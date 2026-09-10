@@ -1,4 +1,4 @@
-#include "sample_scene.h"
+//#include "sample_scene.h"
 #include "application.h"
 #include "core/logger.h"
 #include <chrono>
@@ -16,15 +16,16 @@ int main(int argc, char* argv[]) {
         .title = "Ember Engine - Sample",
         .width = 1280,
         .height = 720,
-        .vsync = true,
-        .fullscreen = false
+		.features = platform::WindowFeature::VSync | platform::WindowFeature::Resizable,
+        .api = graphics::GraphicsAPI::Vulkan
     };
 
     graphics::RendererConfig rendererConfig{
         .width = 1280,
         .height = 720,
         .enableValidation = true,
-        .vsync = true
+        .vsync = true,
+        .api = graphics::GraphicsAPI::Vulkan
     };
 
     if (!app.initialize(windowConfig, rendererConfig)) {
@@ -33,12 +34,13 @@ int main(int argc, char* argv[]) {
     }
 
     // Create sample scene
+    /*
     samples::SampleScene scene;
     if (!scene.initialize(app.getRenderer())) {
         EMBER_LOG_ERROR("Failed to initialize sample scene");
         app.shutdown();
         return 1;
-    }
+    }*/
 
     // Main loop with delta time calculation
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -55,14 +57,14 @@ int main(int argc, char* argv[]) {
         app.getWindow()->pollEvents();
 
         // Update scene
-        scene.update(deltaTime);
+        //scene.update(deltaTime);
 
         // Render frame
-        scene.render();
+        //scene.render();
     }
 
     // Cleanup
-    scene.shutdown();
+    //scene.shutdown();
     app.shutdown();
 
     EMBER_LOG_INFO("Ember Engine Sample shutdown");

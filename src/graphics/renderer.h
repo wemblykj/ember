@@ -1,8 +1,9 @@
 #pragma once
 
-#include "../core/math.h"
 #include <memory>
 #include <vector>
+
+#include "graphics.h"
 
 namespace ember::graphics {
 
@@ -32,6 +33,7 @@ struct RendererConfig {
     uint32_t height = 720;
     bool enableValidation = true;
     bool vsync = true;
+	GraphicsAPI api = GraphicsAPI::Default;
 };
 
 }  // namespace ember::graphics
