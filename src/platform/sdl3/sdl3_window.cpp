@@ -8,7 +8,7 @@ SDL3Window::SDL3Window(const WindowConfig& config)
     using namespace ember::core;
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        EMBER_LOG_FATAL(std::string("Failed to initialize SDL3: ") + SDL_GetError());
+        EMBER_LOG_FATAL("Failed to initialize SDL3: {}", SDL_GetError());
         return;
     }
 
@@ -45,11 +45,11 @@ SDL3Window::SDL3Window(const WindowConfig& config)
     SDL_DestroyProperties(props);
 
     if (!window_) {
-        EMBER_LOG_FATAL(std::string("Failed to create SDL3 window: ") + SDL_GetError());
+        EMBER_LOG_FATAL("Failed to create SDL3 window: {}", SDL_GetError());
         return;
     }
 
-    EMBER_LOG_INFO("SDL3 window created: " + std::to_string(config.width) + "x" + std::to_string(config.height));
+    EMBER_LOG_INFO("SDL3 window created: {}x{}", config.width, config.height);
 }
 
 SDL3Window::~SDL3Window() {

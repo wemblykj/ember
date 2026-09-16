@@ -5,7 +5,7 @@ find_package(Vulkan REQUIRED)
 
 # Graphics sources
 target_sources(ember_graphics PRIVATE
-    vulkan/vulkan_context.cpp
+    #vulkan/vulkan_context.cpp
     vulkan/vulkan_renderer.cpp
 )
 
@@ -30,7 +30,7 @@ target_link_libraries(ember_graphics PUBLIC
     ember_platform
 )
 
-target_compile_features(ember_graphics PRIVATE cxx_std_17)
+target_link_libraries(ember_core PUBLIC ember_cxx_requirements)
 
 target_precompile_headers(ember_graphics PRIVATE
     <string>

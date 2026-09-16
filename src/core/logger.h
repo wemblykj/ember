@@ -1,10 +1,13 @@
 #pragma once
 
-#include <string>
+#include <chrono>
+#include <format>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <chrono>
-#include <iomanip>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace ember::core {
 
@@ -20,12 +23,25 @@ class Logger {
 public:
     static Logger& instance();
 
-    void log(LogLevel level, const std::string& message);
-    void debug(const std::string& message) { log(LogLevel::Debug, message); }
-    void info(const std::string& message) { log(LogLevel::Info, message); }
-    void warning(const std::string& message) { log(LogLevel::Warning, message); }
-    void error(const std::string& message) { log(LogLevel::Error, message); }
-    void fatal(const std::string& message) { log(LogLevel::Fatal, message); }
+    void log(LogLevel level, std::string_view message);
+
+    // Compile-time-checked format string (preferred for literals)
+    template<typename... Args>
+    void log(LogLevel level, std::format_string<Args...> fmt, Args&&... args)
+    {
+        log(level, std::format(fmt, std::forward<Args>(args)...));
+    }
+
+    template <typename... Args>
+    void debug(std::format_string<Args...> fmt, Args&&... args) { log(LogLevel::Debug, fmt, std::forward<Args>(args)...); }
+    template <typename... Args>
+    void info(std::format_string<Args...> fmt, Args&&... args) { log(LogLevel::Info, fmt, std::forward<Args>(args)...); }
+    template <typename... Args>
+    void warning(std::format_string<Args...> fmt, Args&&... args) { log(LogLevel::Warning, fmt, std::forward<Args>(args)...); }
+    template <typename... Args>
+    void error(std::format_string<Args...> fmt, Args&&... args) { log(LogLevel::Error, fmt, std::forward<Args>(args)...); }
+    template <typename... Args>
+    void fatal(std::format_string<Args...> fmt, Args&&... args) { log(LogLevel::Fatal, fmt, std::forward<Args>(args)...); }
 
     void setLevel(LogLevel level) { minLevel_ = level; }
 
@@ -44,9 +60,9 @@ private:
 
 }  // namespace ember::core
 
-// Convenience macros
-#define EMBER_LOG_DEBUG(msg) ember::core::Logger::instance().debug(msg)
-#define EMBER_LOG_INFO(msg) ember::core::Logger::instance().info(msg)
-#define EMBER_LOG_WARN(msg) ember::core::Logger::instance().warning(msg)
-#define EMBER_LOG_ERROR(msg) ember::core::Logger::instance().error(msg)
-#define EMBER_LOG_FATAL(msg) ember::core::Logger::instance().fatal(msg)
+// Convenience macros (variadic; call with one or more arguments)
+#define EMBER_LOG_DEBUG(...)  ember::core::Logger::instance().debug(__VA_ARGS__)
+#define EMBER_LOG_INFO(...)   ember::core::Logger::instance().info(__VA_ARGS__)
+#define EMBER_LOG_WARN(...)   ember::core::Logger::instance().warning(__VA_ARGS__)
+#define EMBER_LOG_ERROR(...)  ember::core::Logger::instance().error(__VA_ARGS__)
+#define EMBER_LOG_FATAL(...)  ember::core::Logger::instance().fatal(__VA_ARGS__)

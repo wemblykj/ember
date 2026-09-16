@@ -7,7 +7,7 @@ Logger& Logger::instance() {
     return logger;
 }
 
-void Logger::log(LogLevel level, const std::string& message) {
+void Logger::log(LogLevel level, std::string_view message) {
     if (level < minLevel_) {
         return;
     }

@@ -42,7 +42,7 @@ target_link_libraries(ember_platform PUBLIC
     ember_core
 )
 
-target_compile_features(ember_platform PRIVATE cxx_std_17)
+target_link_libraries(ember_core PUBLIC ember_cxx_requirements)
 
 target_precompile_headers(ember_platform PRIVATE
     <string>
