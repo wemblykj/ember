@@ -33,9 +33,18 @@ void VulkanRenderer::shutdown() {
     EMBER_LOG_INFO("Vulkan renderer shutdown");
 }
 
+void VulkanRenderer::clearAllResources() {
+    groupMembers_.clear();
+    groupNames_.clear();
+    nextGroupId_ = BuiltinResourceGroup::Custom;
+    nextTechniqueId_ = BuiltinTechnique::Custom;
+    nextMaterialId_ = BuiltinMaterial::Custom;
+    nextGeometryId_ = BuiltinGeometry::Custom;
+}
+
 ResourceGroupID VulkanRenderer::createResourceGroup(const ResourceGroupDesc& desc) {
     ResourceGroupID id = nextGroupId_++;
-    //groupNames_[id] = desc.debugName;
+    groupNames_[id] = desc.debugName;
     return id;
 }
 
@@ -78,12 +87,15 @@ void VulkanRenderer::beginFrame() {
 }
 
 void VulkanRenderer::submitPass(const RendererPass& pass) {
-    for (const auto& bucket : pass.buckets) {
-        VkPipeline pipeline = lookupPipelineForMaterial(bucket.materialId); // cheap lookup
-        vkCmdBindPipeline(cmdBuf_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        for (const auto& packet : bucket.packets) {
-            // bind per-draw data, vkCmdDrawIndexed, etc.
+	MaterialID currentMaterial = BuiltinMaterial::Undefined;
+
+    for (const auto& packet : pass.queue) {
+        if (packet.materialId != currentMaterial) {
+            currentMaterial = packet.materialId;
+            //VkPipeline pipeline = lookupPipelineForMaterial(packet.materialId); // cheap lookup
+            //vkCmdBindPipeline(cmdBuf_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         }
+        // bind per-draw data, vkCmdDrawIndexed, etc.
     }
 }
 

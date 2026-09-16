@@ -7,8 +7,9 @@
 
 namespace ember::graphics::vulkan {
 
-VulkanContext::VulkanContext()
-    : instance_(VK_NULL_HANDLE),
+VulkanContext::VulkanContext(const RendererConfig& config)
+    : config_(config),
+      instance_(VK_NULL_HANDLE),
       physicalDevice_(VK_NULL_HANDLE),
       device_(VK_NULL_HANDLE),
       graphicsQueue_(VK_NULL_HANDLE),

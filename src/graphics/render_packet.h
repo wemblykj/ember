@@ -28,7 +28,7 @@ enum class SortPolicy : uint8_t {
 };
 
 /// @brief Sorts the render packets in the given queue according to the specified sorting policy.
-inline void sortPass(RenderQueue& queue, SortPolicy sortPolicy) {
+inline void sortQueue(RenderQueue& queue, SortPolicy sortPolicy) {
     if (sortPolicy == SortPolicy::MaterialMajor) {
         std::sort(queue.begin(), queue.end(),
             [](const RenderPacket& a, const RenderPacket& b) {

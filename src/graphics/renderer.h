@@ -8,106 +8,9 @@
 
 #include <graphics_api.h>
 
+#include "render_packet.h"
+
 namespace ember::graphics {
-	
-using ResourceGroupID = uint32_t;
-using SortKey = uint64_t;
-using MaterialID = uint32_t;
-using GeometryID = uint32_t;
-using TechniqueID = uint32_t;
-
-/// @brief Built-in resource group IDs for common rendering resource groups.
-namespace BuiltinResourceGroup {
-    constexpr ResourceGroupID Default = 0;
-	/// @brief Base value for custom resource groups. User-defined resource groups should start from this value to avoid conflicts with built-in resource groups.
-    constexpr ResourceGroupID Custom = 0x8000;
-}
-
-/// @brief Built-in technique IDs for common rendering techniques.
-namespace BuiltinTechnique {
-    /// @brief Built-in technique IDs for common rendering techniques.
-    constexpr TechniqueID Opaque = 0;
-    constexpr TechniqueID Transparent = 1;
-    /// @brief Base value for custom techniques. User-defined techniques should start from this value to avoid conflicts with built-in techniques.
-    constexpr TechniqueID Custom = 0x8000;
-}
-	
-/// @brief Built-in material IDs for common rendering materials.
-namespace BuiltinMaterial {
-    constexpr MaterialID Undefined = 0;
-	/// @brief Base value for custom materials. User-defined materials should start from this value to avoid conflicts with built-in materials.
-    constexpr MaterialID Custom = 0x8000;
-}
-
-/// @brief Built-in geometry IDs for common rendering geometries.
-namespace BuiltinGeometry {
-    constexpr GeometryID FullscreenQuad = 1;
-	/// @brief Base value for custom geometries. User-defined geometries should start from this value to avoid conflicts with built-in geometries.
-    constexpr GeometryID Custom = 0x8000;
-}
-
-/// @brief Generic, backend-agnostic shader source reference.
-struct ShaderStageDesc {
-    std::string entryPoint = "main";
-    std::string sourcePath;   // e.g. "shaders/opaque.vert" (compiled per-backend as needed)
-};
-
-enum class BlendMode : uint8_t { Opaque, AlphaBlend, Additive };
-enum class CullMode : uint8_t { None, Front, Back };
-
-/// @brief Backend-agnostic description of a resource group, which can contain multiple resources (e.g., textures, buffers) that can be bound together for rendering.
-struct ResourceGroupDesc {
-    std::string debugName; // for logging/tooling only, not used for lookup
-};
-
-/// @brief Backend-agnostic description of a technique's fixed-function + shader state.
-struct TechniqueDesc {
-    std::string name;
-    ShaderStageDesc vertexShader;
-    ShaderStageDesc fragmentShader;
-    BlendMode blendMode = BlendMode::Opaque;
-    CullMode cullMode = CullMode::Back;
-    bool depthTest = true;
-    bool depthWrite = true;
-};
-
-/// @brief Backend-agnostic description of a material, which references a technique and provides parameter bindings.
-struct MaterialDesc {
-    std::string name;
-    TechniqueID technique;              // which technique this material uses
-    // parameter bindings: textures, uniform values, etc.
-    // (deliberately generic — actual binding layout is backend-specific)
-};
-
-/// @brief Backend-agnostic description of geometry data (vertex/index buffers).
-struct GeometryDesc {
-    // Backend-agnostic description — actual vertex format/layout details
-    // will depend on how you want to structure vertex attributes.
-    const void* vertexData = nullptr;
-    size_t vertexDataSize = 0;
-    const void* indexData = nullptr;
-    size_t indexDataSize = 0;
-    uint32_t indexCount = 0;
-    // vertex layout descriptor, stride, etc. — fill in as your vertex format design solidifies
-};
-
-/// @brief A single render packet, representing a draw call with associated transform, material, and geometry.
-struct RenderPacket {
-    core::Mat4 transform;
-    MaterialID materialId;
-    GeometryID geometryId;
-    SortKey sortKey;
-};
-
-/// @brief Sorting policy for render packets within a pass. Determines how packets are ordered before rendering.
-/// - MaterialMajor: group by material first (minimize state changes), useful
-///   for opaque geometry where draw order otherwise doesn't affect correctness.
-/// - DepthMajor: sort strictly by depth(typically back - to - front), required
-///   for correct alpha blending; material changes are tolerated as needed.
-enum class SortPolicy : uint8_t {
-    MaterialMajor,
-    DepthMajor
-};
 
 using RenderQueue = std::vector<RenderPacket>;
 
@@ -117,26 +20,9 @@ struct RendererPass {
     RenderQueue queue;
 };
 
-/// @brief Sorts the render packets in the given queue according to the specified sorting policy. This function is intended to be called before submitting a pass to the renderer, ensuring that packets are ordered correctly for rendering.
-inline void sortPass(RenderQueue& queue, SortPolicy sortPolicy) {
-    if (sortPolicy == SortPolicy::MaterialMajor) {
-        std::sort(queue.begin(), queue.end(),
-            [](const RenderPacket& a, const RenderPacket& b) {
-                if (a.materialId != b.materialId) return a.materialId < b.materialId;
-                return a.sortKey < b.sortKey;
-            });
-    }
-    else { // DepthMajor
-        std::sort(queue.begin(), queue.end(),
-            [](const RenderPacket& a, const RenderPacket& b) {
-                return a.sortKey > b.sortKey; // back-to-front
-            });
-    }
-}
-
 /// @brief Sorts the render packets in the given RendererPass according to its specified sorting policy. This function is a convenience wrapper around sortPass(RenderQueue&, SortPolicy) that operates directly on a RendererPass object.
 inline void sortPass(RendererPass& pass) {
-	sortPass(pass.queue, pass.sortPolicy);
+	sortQueue(pass.queue, pass.sortPolicy);
 }
 
 /// @brief Abstract interface for a graphics renderer. Concrete implementations (e.g., VulkanRenderer, OpenGLRenderer) should derive from this class and implement the virtual methods.
