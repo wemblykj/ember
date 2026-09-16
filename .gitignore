@@ -1,35 +1,62 @@
-# Build directories
+# ---- Visual Studio ----
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# ---- CMake build output ----
 build/
-cmake-build-debug/
-cmake-build-release/
-.cmake/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+# ---- Ninja ----
+.ninja_deps
+.ninja_log
+build.ninja
 
-# Compiled objects
-*.o
+# ---- vcpkg ----
+vcpkg_installed/
+# Keep vcpkg.json / vcpkg-configuration.json tracked; ignore a locally cloned vcpkg tree
+/vcpkg/
+
+# ---- Compiled binaries / object files ----
 *.obj
-*.a
+*.o
+*.exe
+*.dll
 *.lib
+*.pdb
+*.ilk
+*.exp
+*.a
 *.so
 *.dylib
 
-# Executables
-*.exe
-*.out
+# ---- IntelliSense / misc VS tooling ----
+*.ipch
+*.aps
+*.pch
+*.log
+*.tlog
+*.idb
 
-# CMake
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-*.cmake
+# ---- OS-specific ----
+Thumbs.db
+Desktop.ini
+.DS_Store
 
-# Dependencies
-install/
+# ---- Editor ----
+.vscode/
+*.swp

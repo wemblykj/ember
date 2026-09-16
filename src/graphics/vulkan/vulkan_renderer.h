@@ -40,10 +40,10 @@ private:
 
     RendererConfig config_;
     std::unique_ptr<VulkanContext> context_;
-	ResourceGroupID nextResourceGroupId_ = BuiltinResourceGroup::Custom;
-    TechniqueID nextTechniqueId_ = BuiltinTechnique::Custom;
-	MaterialID nextMaterialId_ = BuiltinMaterial::Custom;
-    GeometryID nextGeometryId_ = BuiltinGeometry::Custom;
+    static ResourceGroupID nextResourceGroupId_ = BuiltinResourceGroup::Custom;
+    static TechniqueID nextTechniqueId_ = BuiltinTechnique::Custom;
+    static MaterialID nextMaterialId_ = BuiltinMaterial::Custom;
+    static GeometryID nextGeometryId_ = BuiltinGeometry::Custom;
     std::unordered_map<ResourceGroupID, ResourceGroupMembers> groupMembers_;
 };
 

@@ -9,6 +9,16 @@ target_sources(ember_graphics PRIVATE
     vulkan/vulkan_renderer.cpp
 )
 
+target_sources(ember_graphics PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+    FILES
+        graphics_types.h
+        resources.h
+        render_packet.h
+        renderer.h
+)
+
 target_include_directories(ember_graphics PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${Vulkan_INCLUDE_DIRS}
@@ -28,4 +38,3 @@ target_precompile_headers(ember_graphics PRIVATE
     <ember_math.h>
     <ember_platform.h>
 )
-

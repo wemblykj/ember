@@ -6,7 +6,7 @@
 #include <utility>
 #include <variant>
 
-#include "graphics.h"
+#include <graphics_api.h>
 
 namespace ember::platform {
 

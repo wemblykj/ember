@@ -34,7 +34,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Add source subdirectories
 add_subdirectory(src/core)
 add_subdirectory(src/platform)
-#add_subdirectory(src/graphics)
+add_subdirectory(src/graphics)
 
 if (EMBER_BUILD_SAMPLES)
 

@@ -26,6 +26,14 @@ if (EMBER_BUILD_SDL2)
 
 endif()
 
+target_sources(ember_platform PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+    FILES
+        ember_platform.h
+        window.h
+)
+
 target_include_directories(ember_platform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -39,5 +47,4 @@ target_compile_features(ember_platform PRIVATE cxx_std_17)
 target_precompile_headers(ember_platform PRIVATE
     <string>
     <ember_core.h>
-    "graphics.h"
 )
