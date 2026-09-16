@@ -2,7 +2,12 @@
   "name": "ember",
   "version": "0.1.0",
   "dependencies": [
-    "sdl3",
+    {
+      "name": "sdl3",
+      "features": [
+        "vulkan"
+      ]
+    },
     "glm"
   ]
 }

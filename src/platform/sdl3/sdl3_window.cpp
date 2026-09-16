@@ -1,4 +1,5 @@
 #include "sdl3_window.h"
+#include <SDL3/SDL_vulkan.h>
 
 namespace ember::platform::sdl3 {
 
@@ -12,8 +13,6 @@ SDL3Window::SDL3Window(const WindowConfig& config)
     }
 
     SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_VULKAN_BOOLEAN, true);
-
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, config.title.c_str());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
