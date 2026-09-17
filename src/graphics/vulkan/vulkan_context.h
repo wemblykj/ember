@@ -1,11 +1,14 @@
 #pragma once
 
 #include "../renderer.h"
-#include "../../platform/window.h"
-#include <vulkan/vulkan.h>
-#include <vector>
-#include <memory>
+
 #include <cstdint>
+#include <memory>
+#include <vector>
+
+#include <vulkan/vulkan.h>
+
+#include "vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
@@ -14,7 +17,7 @@ public:
     explicit VulkanContext(const RendererConfig& config);
     ~VulkanContext();
 
-    bool initialize(platform::Window* window);
+    bool initialize(VulkanSurfaceProvider* provider);
     void shutdown();
 
     VkInstance getInstance() const { return instance_; }
@@ -25,10 +28,11 @@ public:
     uint32_t getGraphicsQueueFamily() const { return graphicsQueueFamily_; }
 
 private:
-    bool createInstance();
+    bool createInstance(std::vector<const char*> extensions);
     bool selectPhysicalDevice();
     bool createLogicalDevice();
-    bool createSurface(platform::Window* window);
+    std::vector<const char*> getRequiredExtensions();
+    bool createSurface(VulkanSurfaceProvider* surfaceProvider);
 
     bool initialized_ = false;
     RendererConfig config_;

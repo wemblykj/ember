@@ -1,5 +1,8 @@
 #include "vulkan_renderer.h"
-#include "../../core/logger.h"
+
+#include <logger.h>
+
+#include "vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
@@ -11,12 +14,21 @@ VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::initialize() {
+bool VulkanRenderer::initialize(platform::SurfaceProvider* provider) {
     using namespace ember::core;
 
     EMBER_LOG_INFO("Initializing Vulkan renderer...");
 
+    auto vulkanProvider = dynamic_cast<VulkanSurfaceProvider*>(provider);
+
+    if (!vulkanProvider) {
+        EMBER_LOG_ERROR("SurfaceProvider is not a VulkanSurfaceProvider");
+        return false;
+    }
+
     context_ = std::make_unique<VulkanContext>(config_);
+
+	context_->initialize(vulkanProvider);
 
     EMBER_LOG_INFO("Vulkan renderer initialized");
     return true;
@@ -112,9 +124,9 @@ void VulkanRenderer::resizeFramebuffer(uint32_t width, uint32_t height) {
     config_.height = height;
 }
 
-RendererPtr createRenderer(const RendererConfig& config, platform::Window* window) {
+RendererPtr createRenderer(const RendererConfig& config, platform::SurfaceProvider* provider) {
     auto renderer = std::make_unique<VulkanRenderer>(config);
-    if (renderer->initialize()) {
+    if (renderer->initialize(provider)) {
         return renderer;
     }
     return nullptr;

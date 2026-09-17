@@ -1,7 +1,6 @@
 if (EMBER_BUILD_SDL3)
     add_library(ember_platform STATIC
-        sdl3/sdl3_window.cpp
-    )
+        sdl3/sdl3_window.cpp)
 
 	find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 
@@ -31,7 +30,7 @@ target_sources(ember_platform PUBLIC
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
         ember_platform.h
-        window.h
+        surface_provider.h
 )
 
 target_include_directories(ember_platform PUBLIC
@@ -39,10 +38,9 @@ target_include_directories(ember_platform PUBLIC
 )
 
 target_link_libraries(ember_platform PUBLIC
+    ember_cxx_requirements
     ember_core
 )
-
-target_link_libraries(ember_core PUBLIC ember_cxx_requirements)
 
 target_precompile_headers(ember_platform PRIVATE
     <string>

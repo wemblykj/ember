@@ -17,7 +17,9 @@ target_include_directories(ember_core PUBLIC
 
 find_package(glm REQUIRED)
 
-target_link_libraries(ember_core PUBLIC ember_cxx_requirements)
+target_link_libraries(ember_core PUBLIC 
+    ember_cxx_requirements
+)
 
 target_precompile_headers(ember_core PRIVATE
     <string>

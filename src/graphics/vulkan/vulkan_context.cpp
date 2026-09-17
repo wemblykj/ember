@@ -1,9 +1,10 @@
 #include "vulkan_context.h"
 
-#include <vulkan/vulkan.h>
-#include <vector>
-#include <stdexcept>
 #include <cstring>
+#include <stdexcept>
+#include <vector>
+
+#include <vulkan/vulkan.h>
 
 namespace ember::graphics::vulkan {
 
@@ -24,26 +25,36 @@ VulkanContext::~VulkanContext() {
     }
 }
 
-bool VulkanContext::initialize(platform::Window* window) {
+bool VulkanContext::initialize(VulkanSurfaceProvider* surfaceProvider) {
     if (initialized_) {
         EMBER_LOG_WARN("VulkanContext already initialized");
         return true;
     }
 
     try {
+        // Get required extensions
+        std::vector<const char*> extensions = getRequiredExtensions();
+        if (surfaceProvider) {
+            std::vector<const char*> surfaceExtensions = surfaceProvider->getRequiredInstanceExtensions();
+			extensions.insert(extensions.end(), surfaceExtensions.begin(), surfaceExtensions.end());
+        }
         // Create Vulkan instance
-        if (!createInstance()) {
+        if (!createInstance(extensions)) {
             EMBER_LOG_ERROR("Failed to create Vulkan instance");
             return false;
         }
 
         // Create surface if window provided (for desktop rendering)
-        if (window) {
-            if (!createSurface(window)) {
+        if (surfaceProvider) {
+            if (!createSurface(surfaceProvider)) {
                 EMBER_LOG_ERROR("Failed to create Vulkan surface");
                 return false;
             }
         }
+        else {
+            EMBER_LOG_WARN("SurfaceProvider is null, skipping surface creation");
+        }
+
 
         // Select physical device
         if (!selectPhysicalDevice()) {
@@ -65,7 +76,7 @@ bool VulkanContext::initialize(platform::Window* window) {
         return true;
 
     } catch (const std::exception& e) {
-        EMBER_LOG_ERROR("VulkanContext initialization exception: " + std::string(e.what()));
+        EMBER_LOG_ERROR("VulkanContext initialization exception: {}", e.what());
         shutdown();
         return false;
     }
@@ -100,7 +111,7 @@ void VulkanContext::shutdown() {
     EMBER_LOG_INFO("VulkanContext shutdown complete");
 }
 
-bool VulkanContext::createInstance() {
+bool VulkanContext::createInstance(std::vector<const char*> extensions) {
     // Application info
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -115,9 +126,8 @@ bool VulkanContext::createInstance() {
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
-    // Get required extensions
-    std::vector<const char*> extensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     // Validation layers
@@ -139,18 +149,14 @@ bool VulkanContext::createInstance() {
     return true;
 }
 
-bool VulkanContext::createSurface(platform::Window* window) {
-    if (!window) {
-        EMBER_LOG_WARN("Window is null, skipping surface creation");
-        return true;  // Headless mode is acceptable
-    }
-
+bool VulkanContext::createSurface(VulkanSurfaceProvider* surfaceProvider) {
     // Platform-specific surface creation
     // This is a stub - actual implementation depends on platform layer
     // For now, we'll create a simple surface placeholder
-
+	
     EMBER_LOG_INFO("Surface creation deferred to platform layer");
-    return true;
+
+    return surfaceProvider->createSurface(instance_, surface_);
 }
 
 bool VulkanContext::selectPhysicalDevice() {
@@ -249,31 +255,6 @@ std::vector<const char*> VulkanContext::getRequiredExtensions() {
 #endif
 
     return extensions;
-}
-
-// Getters
-VkInstance VulkanContext::getInstance() const {
-    return instance_;
-}
-
-VkPhysicalDevice VulkanContext::getPhysicalDevice() const {
-    return physicalDevice_;
-}
-
-VkDevice VulkanContext::getDevice() const {
-    return device_;
-}
-
-VkQueue VulkanContext::getGraphicsQueue() const {
-    return graphicsQueue_;
-}
-
-uint32_t VulkanContext::getGraphicsQueueFamily() const {
-    return graphicsQueueFamily_;
-}
-
-VkSurfaceKHR VulkanContext::getSurface() const {
-    return surface_;
 }
 
 }  // namespace ember::graphics::vulkan

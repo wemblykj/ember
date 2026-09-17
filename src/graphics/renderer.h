@@ -7,6 +7,7 @@
 #include <ember_math.h>
 
 #include <graphics_api.h>
+#include <surface_provider.h>
 
 #include "render_packet.h"
 
@@ -30,7 +31,7 @@ class Renderer {
 public:
     virtual ~Renderer() = default;
 
-    virtual bool initialize() = 0;
+    virtual bool initialize(platform::SurfaceProvider* provider) = 0;
     virtual void shutdown() = 0;
 
 	/// @brief Clear all registered resources (techniques, materials, geometries) and reset the renderer to an empty state. This is useful for hot-reloading or resetting the renderer without destroying it.

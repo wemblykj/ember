@@ -1,11 +1,13 @@
 #pragma once
 
 #include "../renderer.h"
-#include "vulkan_context.h"
+
 #include <memory>
 #include <string>
 #include <vector>
 #include <unordered_map>
+
+#include "vulkan_context.h"
 
 namespace ember::graphics::vulkan {
 
@@ -17,7 +19,7 @@ public:
     explicit VulkanRenderer(const RendererConfig& config);
     ~VulkanRenderer() override;
 
-    bool initialize() override;
+    bool initialize(platform::SurfaceProvider* provider) override;
     void shutdown() override;
 
     void clearAllResources() override;
@@ -57,6 +59,6 @@ private:
 /**
  * Factory function for creating Vulkan renderers
  */
-RendererPtr createRenderer(const RendererConfig& config, platform::Window* window);
+RendererPtr createRenderer(const RendererConfig& config, platform::SurfaceProvider* provider);
 
 }  // namespace ember::graphics::vulkan

@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(EMBER_BUILD_SDL3 "Build with SDL3 support" ON)
+option(EMBER_BUILD_SDL2 "Build with SDL2 support" OFF)
+
 # Build configuration
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
@@ -15,7 +18,15 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Find required packages
 find_package(Vulkan REQUIRED)
-find_package(SDL3 REQUIRED)
+
+if (EMBER_BUILD_SDL3)
+    find_package(SDL3 REQUIRED)
+endif()
+
+if (EMBER_BUILD_SDL2)
+    find_package(SDL2 REQUIRED)
+endif()
+
 find_package(glm REQUIRED)
 
 # Add source subdirectories

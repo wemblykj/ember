@@ -5,8 +5,9 @@ find_package(Vulkan REQUIRED)
 
 # Graphics sources
 target_sources(ember_graphics PRIVATE
-    #vulkan/vulkan_context.cpp
+    vulkan/vulkan_context.cpp
     vulkan/vulkan_renderer.cpp
+    vulkan/sdl3_vulkan_surface_provider.cpp
 )
 
 target_sources(ember_graphics PUBLIC
@@ -17,6 +18,8 @@ target_sources(ember_graphics PUBLIC
         resources.h
         render_packet.h
         renderer.h
+        vulkan/vulkan_surface_provider.h
+        vulkan/sdl3_vulkan_surface_provider.h
 )
 
 target_include_directories(ember_graphics PUBLIC
@@ -26,11 +29,10 @@ target_include_directories(ember_graphics PUBLIC
 
 target_link_libraries(ember_graphics PUBLIC
     ${Vulkan_LIBRARIES}
+    ember_cxx_requirements
     ember_core
     ember_platform
 )
-
-target_link_libraries(ember_core PUBLIC ember_cxx_requirements)
 
 target_precompile_headers(ember_graphics PRIVATE
     <string>
