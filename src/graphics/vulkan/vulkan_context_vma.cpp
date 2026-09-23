@@ -1,21 +1,17 @@
 #include "vulkan_context_vma.h"
 
-#include <cstring>
-#include <stdexcept>
-#include <vector>
-
-#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 
 namespace ember::graphics::vulkan {
 
-VulkanContextVma::VulkanContextVma(const RendererConfig& config)
-    : config_(config),
-      instance_(VK_NULL_HANDLE),
+VulkanContextVma::VulkanContextVma()
+    : instance_(VK_NULL_HANDLE),
       physicalDevice_(VK_NULL_HANDLE),
       device_(VK_NULL_HANDLE),
       graphicsQueue_(VK_NULL_HANDLE),
       graphicsQueueFamily_(0),
-      surface_(VK_NULL_HANDLE),
+      commandPool_(VK_NULL_HANDLE),
+      allocator_(VK_NULL_HANDLE),
       initialized_(false) {
 }
 
@@ -25,36 +21,18 @@ VulkanContextVma::~VulkanContextVma() {
     }
 }
 
-bool VulkanContextVma::initialize(VulkanSurfaceProvider* surfaceProvider) {
+bool VulkanContextVma::initialize(const std::vector<const char*>& extensions) {
     if (initialized_) {
         EMBER_LOG_WARN("VulkanContextVma already initialized");
         return true;
     }
 
     try {
-        // Get required extensions
-        std::vector<const char*> extensions = getRequiredExtensions();
-        if (surfaceProvider) {
-            std::vector<const char*> surfaceExtensions = surfaceProvider->getRequiredInstanceExtensions();
-			extensions.insert(extensions.end(), surfaceExtensions.begin(), surfaceExtensions.end());
-        }
         // Create Vulkan instance
         if (!createInstance(extensions)) {
             EMBER_LOG_ERROR("Failed to create Vulkan instance");
             return false;
         }
-
-        // Create surface if window provided (for desktop rendering)
-        if (surfaceProvider) {
-            if (!createSurface(surfaceProvider)) {
-                EMBER_LOG_ERROR("Failed to create Vulkan surface");
-                return false;
-            }
-        }
-        else {
-            EMBER_LOG_WARN("SurfaceProvider is null, skipping surface creation");
-        }
-
 
         // Select physical device
         if (!selectPhysicalDevice()) {
@@ -72,6 +50,12 @@ bool VulkanContextVma::initialize(VulkanSurfaceProvider* surfaceProvider) {
             EMBER_LOG_ERROR("Failed to create Vulkan memory allocator");
             return false;
 		}
+
+        // Create one time command pool
+		if (!createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &commandPool_)) {
+            EMBER_LOG_ERROR("Failed to create one time command pool");
+            return false;
+        }
 
         // Get graphics queue
         vkGetDeviceQueue(device_, graphicsQueueFamily_, 0, &graphicsQueue_);
@@ -103,15 +87,12 @@ void VulkanContextVma::shutdown() {
         device_ = VK_NULL_HANDLE;
     }
 
-    if (surface_ != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(instance_, surface_, nullptr);
-        surface_ = VK_NULL_HANDLE;
-    }
-
     if (instance_ != VK_NULL_HANDLE) {
         vkDestroyInstance(instance_, nullptr);
         instance_ = VK_NULL_HANDLE;
     }
+
+	destroyCommandPool(commandPool_);
 
     physicalDevice_ = VK_NULL_HANDLE;
     graphicsQueue_ = VK_NULL_HANDLE;
@@ -158,15 +139,40 @@ void VulkanContextVma::freeCommandBuffers(VkCommandPool pool, uint32_t count, co
 
 VkCommandBuffer VulkanContextVma::beginOneTimeCommands()
 {
-	
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = commandPool_;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	return commandBuffer;
 }
 
 void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd)
 {
-	
+	vkEndCommandBuffer(cmd);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+
+	vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(graphicsQueue_);
+
+	vkFreeCommandBuffers(device_, commandPool_, 1, &cmd);
 }
 
-VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, VmaAllocation* outMemory)
+VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory)
 {
     VkBuffer buffer;
     VkDeviceMemory memory;
@@ -179,14 +185,18 @@ VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags us
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 	
-    return vmaCreateBuffer(allocator_, &info, nullptr, outBuffer, outMemory, nullptr);
-	
+    VmaAllocation allocation;
+    VkResult result = vmaCreateBuffer(allocator_, &info, nullptr, outBuffer, &allocation, nullptr);
+    if (result == VK_SUCCESS) {
+        *outMemory = toAllocationHandle(allocation);
+    }
+
+    return result;
 }
 
-void VulkanContextVma::destroyBuffer(VkBuffer buffer, VkDeviceMemory memory)
+void VulkanContextVma::destroyBuffer(VkBuffer buffer, AllocationHandle memory)
 {
-	vkDestroyBuffer(device_, buffer, nullptr);
-	vkFreeMemory(device_, memory, nullptr);
+    vmaDestroyBuffer(allocator_, buffer, toVma(memory));
 }
 
 bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
@@ -227,16 +237,6 @@ bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
     return true;
 }
 
-bool VulkanContextVma::createSurface(VulkanSurfaceProvider* surfaceProvider) {
-    // Platform-specific surface creation
-    // This is a stub - actual implementation depends on platform layer
-    // For now, we'll create a simple surface placeholder
-	
-    EMBER_LOG_INFO("Surface creation deferred to platform layer");
-
-    return surfaceProvider->createSurface(instance_, surface_);
-}
-
 bool VulkanContextVma::createMemoryAllocator()
 {
     VmaAllocatorCreateInfo allocatorInfo = {};
@@ -250,6 +250,8 @@ bool VulkanContextVma::createMemoryAllocator()
         EMBER_LOG_ERROR("vmaCreateAllocator failed with code: {}", std::to_string(result));
         return false;
     }
+
+    return true;
 }
 
 bool VulkanContextVma::selectPhysicalDevice() {
@@ -328,26 +330,6 @@ bool VulkanContextVma::createLogicalDevice() {
     }
 
     return true;
-}
-
-std::vector<const char*> VulkanContextVma::getRequiredExtensions() {
-    std::vector<const char*> extensions;
-
-    // Core extensions
-    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-
-    // Platform-specific surface extension
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XCBKHR)
-    extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-#endif
-
-    return extensions;
 }
 
 }  // namespace ember::graphics::vulkan

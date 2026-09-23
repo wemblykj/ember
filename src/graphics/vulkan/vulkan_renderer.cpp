@@ -2,11 +2,12 @@
 
 #include <logger.h>
 
+#include "vulkan_context_vma.h"
 #include "vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
-VulkanRenderer::VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContextVma> context, std::shared_ptr<VulkanResourceCacheVma> resourceCache)
+VulkanRenderer::VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContext> context, std::shared_ptr<VulkanResourceCache> resourceCache)
     : config_(config)
     , context_(context)
     , resourceCache_(resourceCache) {
@@ -28,7 +29,27 @@ bool VulkanRenderer::initialize(platform::SurfaceProvider* provider) {
         return false;
     }
 
-	context_->initialize(vulkanProvider);
+    // Get required extensions
+    std::vector<const char*> extensions = getRequiredExtensions();
+
+    // Create surface if window provided (for desktop rendering)
+    if (vulkanProvider) {
+        std::vector<const char*> surfaceExtensions = vulkanProvider->getRequiredInstanceExtensions();
+        extensions.insert(extensions.end(), surfaceExtensions.begin(), surfaceExtensions.end());
+    }
+
+	context_->initialize(extensions);
+
+    // Create surface if window provided (for desktop rendering)
+    if (vulkanProvider) {
+        if (!vulkanProvider->createSurface(context_->getInstance(), surface_)) {
+            EMBER_LOG_ERROR("Failed to create Vulkan surface");
+            return false;
+        }
+    }
+    else {
+        EMBER_LOG_WARN("SurfaceProvider is null, skipping surface creation");
+    }
 
     createFrameResources();
 
@@ -40,6 +61,11 @@ void VulkanRenderer::shutdown() {
     using namespace ember::core;
 
     destroyFrameResources();
+
+    if (surface_ != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(context_->getInstance(), surface_, nullptr);
+        surface_ = VK_NULL_HANDLE;
+    }
 
     if (context_) {
         context_->shutdown();
@@ -127,17 +153,38 @@ void VulkanRenderer::destroyFrameResources()
     }
 }
 
-RendererPtr createRenderer(const RendererConfig& config, platform::SurfaceProvider* provider) {
-    auto context = std::make_shared<VulkanContextVma>(config);
-    
-	ResourceCacheConfig resourceCacheConfig;
-    auto resourceCache = std::make_shared<VulkanResourceCacheVma>(resourceCacheConfig, context);
+std::vector<const char*> VulkanRenderer::getRequiredExtensions() {
+    std::vector<const char*> extensions;
+
+    // Core extensions
+    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+
+    // Platform-specific surface extension
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+#elif defined(VK_USE_PLATFORM_XCBKHR)
+    extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+    extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
+#endif
+
+    return extensions;
+}
+
+RendererPtr createRenderer(const RendererConfig& config, platform::SurfaceProvider* surfaceProvider) {
+    auto context = std::make_shared<VulkanContextVma>();
+
+    ResourceCacheConfig resourceCacheConfig;
+    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context);
 
     auto renderer = std::make_unique<VulkanRenderer>(config, context, resourceCache);
-    if (renderer->initialize(provider)) {
+    if (renderer->initialize(surfaceProvider)) {
         return renderer;
     }
     return nullptr;
 }
+
 
 }  // namespace ember::graphics::vulkan

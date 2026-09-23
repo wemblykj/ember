@@ -6,9 +6,8 @@
 #include <string>
 #include <vector>
 
-#include "vulkan_context_vma.h"
-#include "resource_records.h"
-#include "vulkan_resource_cache_vma.h"
+#include "vulkan_context.h"
+#include "vulkan_resource_cache.h"
 
 namespace ember::graphics::vulkan {
 
@@ -17,7 +16,7 @@ namespace ember::graphics::vulkan {
  */
 class VulkanRenderer : public Renderer {
 public:
-    explicit VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContextVma> context, std::shared_ptr<VulkanResourceCacheVma> resourceCache);
+    explicit VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContext> context, std::shared_ptr<VulkanResourceCache> resourceCache);
     ~VulkanRenderer() override;
     
     bool initialize(platform::SurfaceProvider* provider) override;
@@ -32,6 +31,9 @@ public:
     void resizeFramebuffer(uint32_t width, uint32_t height) override;
 
 private:
+    std::vector<const char*> getRequiredExtensions();
+    VkSurfaceKHR getSurface() const { return surface_; }
+
     bool createFrameResources();
     void destroyFrameResources();
 
@@ -44,8 +46,9 @@ private:
         VkSemaphore renderFinished = VK_NULL_HANDLE;
 	};
 
-    std::shared_ptr<VulkanContextVma> context_;
-    std::shared_ptr<VulkanResourceCacheVma> resourceCache_;
+    std::shared_ptr<VulkanContext> context_;
+    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+    std::shared_ptr<VulkanResourceCache> resourceCache_;
 
     std::vector<FrameContext> frames_;
     uint32_t currentFrameIndex_ = 0;

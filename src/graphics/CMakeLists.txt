@@ -6,10 +6,11 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Graphics sources
 target_sources(ember_graphics PRIVATE
-    "vulkan/vulkan_context_vma.cpp"
+    vulkan/vulkan_context_vma.cpp
+    vulkan/vulkan_resource_cache.cpp
     vulkan/vulkan_renderer.cpp
     vulkan/sdl3_vulkan_surface_provider.cpp
-    vulkan/vulkan_resource_cache_vma.cpp)
+)
 
 target_sources(ember_graphics PUBLIC
     FILE_SET HEADERS

@@ -1,19 +1,19 @@
-#include "vulkan_resource_cache_vma.h"
+#include "vulkan_resource_cache.h"
 
 #include <logger.h>
 
 namespace ember::graphics::vulkan {
 
-VulkanResourceCacheVma::VulkanResourceCacheVma(const ResourceCacheConfig& config, std::shared_ptr<VulkanContextVma> context)
+VulkanResourceCache::VulkanResourceCache(const ResourceCacheConfig& config, std::shared_ptr<VulkanContext> context)
     : config_(config)
 	, context_(context){
 }
 
-VulkanResourceCacheVma::~VulkanResourceCacheVma() {
+VulkanResourceCache::~VulkanResourceCache() {
     clearAllResources();
 }
 
-TechniqueRecord VulkanResourceCacheVma::ResolveTechnique(TechniqueID id)
+TechniqueRecord VulkanResourceCache::ResolveTechnique(TechniqueID id)
 {
     if (id == BuiltinTechnique::Undefined) {
         EMBER_LOG_WARN("Technique ID {} is undefined. Returning default technique.", id);
@@ -29,7 +29,7 @@ TechniqueRecord VulkanResourceCacheVma::ResolveTechnique(TechniqueID id)
     return it->second.record;
 }
 
-MaterialRecord VulkanResourceCacheVma::ResolveMaterial(MaterialID id)
+MaterialRecord VulkanResourceCache::ResolveMaterial(MaterialID id)
 {
     if (id == BuiltinMaterial::Undefined) {
         EMBER_LOG_WARN("Material ID {} is undefined. Returning unassigned material.", id);
@@ -45,7 +45,7 @@ MaterialRecord VulkanResourceCacheVma::ResolveMaterial(MaterialID id)
     return it->second.record;
 }
 
-GeometryRecord VulkanResourceCacheVma::ResolveGeometry(GeometryID id)
+GeometryRecord VulkanResourceCache::ResolveGeometry(GeometryID id)
 {
     if (id == BuiltinGeometry::Undefined) {
         EMBER_LOG_WARN("Geometry ID {} is undefined. Returning default geometry.", id);
@@ -61,7 +61,7 @@ GeometryRecord VulkanResourceCacheVma::ResolveGeometry(GeometryID id)
     return it->second.record;
 }   
 
-void VulkanResourceCacheVma::clearAllResources() {
+void VulkanResourceCache::clearAllResources() {
     groupMembers_.clear();
     groupNames_.clear();
     nextGroupId_ = BuiltinResourceGroup::Custom;
@@ -70,13 +70,13 @@ void VulkanResourceCacheVma::clearAllResources() {
     nextGeometryId_ = BuiltinGeometry::Custom;
 }
 
-ResourceGroupID VulkanResourceCacheVma::createResourceGroup(const ResourceGroupDesc& desc) {
+ResourceGroupID VulkanResourceCache::createResourceGroup(const ResourceGroupDesc& desc) {
     ResourceGroupID id = nextGroupId_++;
     groupNames_[id] = desc.debugName;
     return id;
 }
 
-void VulkanResourceCacheVma::releaseResourceGroup(ResourceGroupID group) {
+void VulkanResourceCache::releaseResourceGroup(ResourceGroupID group) {
     auto it = groupMembers_.find(group);
     if (it == groupMembers_.end()) return;
 
@@ -89,22 +89,22 @@ void VulkanResourceCacheVma::releaseResourceGroup(ResourceGroupID group) {
     groupNames_.erase(group);
 }
 
-bool VulkanResourceCacheVma::assertTechnique(TechniqueID id)
+bool VulkanResourceCache::assertTechnique(TechniqueID id)
 {
     return techniques_.contains(id);
 }
 
-bool VulkanResourceCacheVma::assertMaterial(MaterialID id)
+bool VulkanResourceCache::assertMaterial(MaterialID id)
 {
     return materials_.contains(id);
 }
 
-bool VulkanResourceCacheVma::assertGeometry(GeometryID id)
+bool VulkanResourceCache::assertGeometry(GeometryID id)
 {
     return geometry_.contains(id);
 }
 
-TechniqueID VulkanResourceCacheVma::registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) {
+TechniqueID VulkanResourceCache::registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) {
     TechniqueID id = nextTechniqueId_++;
     techniques_[id] = { group };
     //techniques_[id] = compilePipeline(desc); // expensive, done once
@@ -112,7 +112,7 @@ TechniqueID VulkanResourceCacheVma::registerTechnique(const TechniqueDesc& desc,
     return id;
 }
 
-MaterialID VulkanResourceCacheVma::registerMaterial(const MaterialDesc& desc, ResourceGroupID group) {
+MaterialID VulkanResourceCache::registerMaterial(const MaterialDesc& desc, ResourceGroupID group) {
     MaterialID id = nextMaterialId_++;
     materials_[id] = { group };
     //materials_[id] = compileMaterial(desc); // expensive, done once
@@ -120,7 +120,7 @@ MaterialID VulkanResourceCacheVma::registerMaterial(const MaterialDesc& desc, Re
     return id;
 }
 
-GeometryID VulkanResourceCacheVma::registerGeometry(const GeometryDesc& desc, ResourceGroupID group) {
+GeometryID VulkanResourceCache::registerGeometry(const GeometryDesc& desc, ResourceGroupID group) {
     GeometryID id = nextGeometryId_++;
     geometry_[id] = { group };
     //geometry_[id] = compilePipeline(desc); // expensive, done once
@@ -128,7 +128,7 @@ GeometryID VulkanResourceCacheVma::registerGeometry(const GeometryDesc& desc, Re
     return id;
 }
 
-MaterialID VulkanResourceCacheVma::setUnassignedMaterial(MaterialID id)
+MaterialID VulkanResourceCache::setUnassignedMaterial(MaterialID id)
 {
     auto previousId = unassignedMaterial_;
     unassignedMaterial_ = id;
@@ -136,7 +136,7 @@ MaterialID VulkanResourceCacheVma::setUnassignedMaterial(MaterialID id)
     return previousId;
 }
 
-MaterialID VulkanResourceCacheVma::setUnresolvedMaterial(MaterialID id)
+MaterialID VulkanResourceCache::setUnresolvedMaterial(MaterialID id)
 {
     auto previousId = unresolvedMaterial_;
     unresolvedMaterial_ = id;
@@ -144,7 +144,7 @@ MaterialID VulkanResourceCacheVma::setUnresolvedMaterial(MaterialID id)
     return previousId;
 }
 
-MaterialID VulkanResourceCacheVma::bindMaterial(MaterialID id)
+MaterialID VulkanResourceCache::bindMaterial(MaterialID id)
 {
     const auto it = materials_.find(id);
     if (it == materials_.end()) {
@@ -159,7 +159,7 @@ MaterialID VulkanResourceCacheVma::bindMaterial(MaterialID id)
     return id;
 }
 
-void VulkanResourceCacheVma::destroyMaterial(MaterialID id)
+void VulkanResourceCache::destroyMaterial(MaterialID id)
 {
     const auto it = materials_.find(id);
     if (it != materials_.end()) {
@@ -167,7 +167,7 @@ void VulkanResourceCacheVma::destroyMaterial(MaterialID id)
     }
 }
 
-void VulkanResourceCacheVma::destroyTechnique(TechniqueID id)
+void VulkanResourceCache::destroyTechnique(TechniqueID id)
 {
     const auto it = techniques_.find(id);
     if (it != techniques_.end()) {
@@ -175,7 +175,7 @@ void VulkanResourceCacheVma::destroyTechnique(TechniqueID id)
     }
 }
 
-void VulkanResourceCacheVma::destroyGeometry(GeometryID id)
+void VulkanResourceCache::destroyGeometry(GeometryID id)
 {
     const auto it = geometry_.find(id);
     if (it != geometry_.end()) {
