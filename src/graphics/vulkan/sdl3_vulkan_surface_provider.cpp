@@ -17,6 +17,8 @@ std::vector<const char*> SDL3VulkanSurfaceProvider::getRequiredInstanceExtension
     for (unsigned i = 0; i < count; ++i) {
         out.push_back(extensions[i]);
 	}
+
+    return out;
 }
 
 bool SDL3VulkanSurfaceProvider::createSurface(VkInstance instance, VkSurfaceKHR &outSurface) {

@@ -2,13 +2,14 @@ add_library(ember_graphics STATIC)
 
 # Vulkan
 find_package(Vulkan REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Graphics sources
 target_sources(ember_graphics PRIVATE
-    vulkan/vulkan_context.cpp
+    "vulkan/vulkan_context_vma.cpp"
     vulkan/vulkan_renderer.cpp
     vulkan/sdl3_vulkan_surface_provider.cpp
-)
+    vulkan/vulkan_resource_cache_vma.cpp)
 
 target_sources(ember_graphics PUBLIC
     FILE_SET HEADERS
@@ -27,8 +28,12 @@ target_include_directories(ember_graphics PUBLIC
     ${Vulkan_INCLUDE_DIRS}
 )
 
+target_link_libraries(ember_graphics PRIVATE
+    Vulkan::Headers
+    GPUOpen::VulkanMemoryAllocator
+)
+
 target_link_libraries(ember_graphics PUBLIC
-    ${Vulkan_LIBRARIES}
     ember_cxx_requirements
     ember_core
     ember_platform

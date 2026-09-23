@@ -1,4 +1,4 @@
-#include "vulkan_context.h"
+#include "vulkan_context_vma.h"
 
 #include <cstring>
 #include <stdexcept>
@@ -8,7 +8,7 @@
 
 namespace ember::graphics::vulkan {
 
-VulkanContext::VulkanContext(const RendererConfig& config)
+VulkanContextVma::VulkanContextVma(const RendererConfig& config)
     : config_(config),
       instance_(VK_NULL_HANDLE),
       physicalDevice_(VK_NULL_HANDLE),
@@ -19,15 +19,15 @@ VulkanContext::VulkanContext(const RendererConfig& config)
       initialized_(false) {
 }
 
-VulkanContext::~VulkanContext() {
+VulkanContextVma::~VulkanContextVma() {
     if (initialized_) {
         shutdown();
     }
 }
 
-bool VulkanContext::initialize(VulkanSurfaceProvider* surfaceProvider) {
+bool VulkanContextVma::initialize(VulkanSurfaceProvider* surfaceProvider) {
     if (initialized_) {
-        EMBER_LOG_WARN("VulkanContext already initialized");
+        EMBER_LOG_WARN("VulkanContextVma already initialized");
         return true;
     }
 
@@ -68,23 +68,33 @@ bool VulkanContext::initialize(VulkanSurfaceProvider* surfaceProvider) {
             return false;
         }
 
+        if (!createMemoryAllocator()) {
+            EMBER_LOG_ERROR("Failed to create Vulkan memory allocator");
+            return false;
+		}
+
         // Get graphics queue
         vkGetDeviceQueue(device_, graphicsQueueFamily_, 0, &graphicsQueue_);
 
         initialized_ = true;
-        EMBER_LOG_INFO("VulkanContext initialized successfully");
+        EMBER_LOG_INFO("VulkanContextVma initialized successfully");
         return true;
 
     } catch (const std::exception& e) {
-        EMBER_LOG_ERROR("VulkanContext initialization exception: {}", e.what());
+        EMBER_LOG_ERROR("VulkanContextVma initialization exception: {}", e.what());
         shutdown();
         return false;
     }
 }
 
-void VulkanContext::shutdown() {
+void VulkanContextVma::shutdown() {
     if (!initialized_) {
         return;
+    }
+
+    if (allocator_ != VK_NULL_HANDLE) {
+        vmaDestroyAllocator(allocator_);
+        allocator_ = VK_NULL_HANDLE;
     }
 
     if (device_ != VK_NULL_HANDLE) {
@@ -108,10 +118,78 @@ void VulkanContext::shutdown() {
     graphicsQueueFamily_ = 0;
     initialized_ = false;
 
-    EMBER_LOG_INFO("VulkanContext shutdown complete");
+    EMBER_LOG_INFO("VulkanContextVma shutdown complete");
 }
 
-bool VulkanContext::createInstance(std::vector<const char*> extensions) {
+VkResult VulkanContextVma::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags,
+	VkCommandPool* outPool)
+{
+    VkCommandPoolCreateInfo info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+    	.flags = flags,
+		.queueFamilyIndex = queueFamilyIndex
+    };
+
+	return vkCreateCommandPool(device_, &info, nullptr, outPool);
+}
+
+void VulkanContextVma::destroyCommandPool(VkCommandPool pool)
+{
+	vkDestroyCommandPool(device_, pool, nullptr);
+}
+
+VkResult VulkanContextVma::allocateCommandBuffers(VkCommandPool pool, VkCommandBufferLevel level, uint32_t count,
+	VkCommandBuffer* outBuffers)
+{
+    VkCommandBufferAllocateInfo info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = pool,
+        .level = level,
+        .commandBufferCount = count
+    };
+
+	return vkAllocateCommandBuffers(device_, &info, outBuffers);
+}
+
+void VulkanContextVma::freeCommandBuffers(VkCommandPool pool, uint32_t count, const VkCommandBuffer* buffers)
+{
+	vkFreeCommandBuffers(device_, pool, count, buffers);
+}
+
+VkCommandBuffer VulkanContextVma::beginOneTimeCommands()
+{
+	
+}
+
+void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd)
+{
+	
+}
+
+VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, VmaAllocation* outMemory)
+{
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+
+    VkBufferCreateInfo info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.flags = 0,
+        .size = size,
+        .usage = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+	
+    return vmaCreateBuffer(allocator_, &info, nullptr, outBuffer, outMemory, nullptr);
+	
+}
+
+void VulkanContextVma::destroyBuffer(VkBuffer buffer, VkDeviceMemory memory)
+{
+	vkDestroyBuffer(device_, buffer, nullptr);
+	vkFreeMemory(device_, memory, nullptr);
+}
+
+bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
     // Application info
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -142,14 +220,14 @@ bool VulkanContext::createInstance(std::vector<const char*> extensions) {
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
     if (result != VK_SUCCESS) {
-        EMBER_LOG_ERROR("vkCreateInstance failed with code: " + std::to_string(result));
+        EMBER_LOG_ERROR("vkCreateInstance failed with code: {}", std::to_string(result));
         return false;
     }
 
     return true;
 }
 
-bool VulkanContext::createSurface(VulkanSurfaceProvider* surfaceProvider) {
+bool VulkanContextVma::createSurface(VulkanSurfaceProvider* surfaceProvider) {
     // Platform-specific surface creation
     // This is a stub - actual implementation depends on platform layer
     // For now, we'll create a simple surface placeholder
@@ -159,7 +237,22 @@ bool VulkanContext::createSurface(VulkanSurfaceProvider* surfaceProvider) {
     return surfaceProvider->createSurface(instance_, surface_);
 }
 
-bool VulkanContext::selectPhysicalDevice() {
+bool VulkanContextVma::createMemoryAllocator()
+{
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = physicalDevice_;
+    allocatorInfo.device = device_;
+    allocatorInfo.instance = instance_;
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+
+    VkResult result = vmaCreateAllocator(&allocatorInfo, &allocator_);
+    if (result != VK_SUCCESS) {
+        EMBER_LOG_ERROR("vmaCreateAllocator failed with code: {}", std::to_string(result));
+        return false;
+    }
+}
+
+bool VulkanContextVma::selectPhysicalDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
 
@@ -199,7 +292,7 @@ bool VulkanContext::selectPhysicalDevice() {
     return false;
 }
 
-bool VulkanContext::createLogicalDevice() {
+bool VulkanContextVma::createLogicalDevice() {
     // Queue create info
     float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -237,7 +330,7 @@ bool VulkanContext::createLogicalDevice() {
     return true;
 }
 
-std::vector<const char*> VulkanContext::getRequiredExtensions() {
+std::vector<const char*> VulkanContextVma::getRequiredExtensions() {
     std::vector<const char*> extensions;
 
     // Core extensions

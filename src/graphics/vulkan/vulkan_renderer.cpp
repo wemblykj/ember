@@ -6,8 +6,10 @@
 
 namespace ember::graphics::vulkan {
 
-VulkanRenderer::VulkanRenderer(const RendererConfig& config)
-    : config_(config) {
+VulkanRenderer::VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContextVma> context, std::shared_ptr<VulkanResourceCacheVma> resourceCache)
+    : config_(config)
+    , context_(context)
+    , resourceCache_(resourceCache) {
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -26,9 +28,9 @@ bool VulkanRenderer::initialize(platform::SurfaceProvider* provider) {
         return false;
     }
 
-    context_ = std::make_unique<VulkanContext>(config_);
-
 	context_->initialize(vulkanProvider);
+
+    createFrameResources();
 
     EMBER_LOG_INFO("Vulkan renderer initialized");
     return true;
@@ -36,6 +38,8 @@ bool VulkanRenderer::initialize(platform::SurfaceProvider* provider) {
 
 void VulkanRenderer::shutdown() {
     using namespace ember::core;
+
+    destroyFrameResources();
 
     if (context_) {
         context_->shutdown();
@@ -45,57 +49,23 @@ void VulkanRenderer::shutdown() {
     EMBER_LOG_INFO("Vulkan renderer shutdown");
 }
 
-void VulkanRenderer::clearAllResources() {
-    groupMembers_.clear();
-    groupNames_.clear();
-    nextGroupId_ = BuiltinResourceGroup::Custom;
-    nextTechniqueId_ = BuiltinTechnique::Custom;
-    nextMaterialId_ = BuiltinMaterial::Custom;
-    nextGeometryId_ = BuiltinGeometry::Custom;
-}
-
-ResourceGroupID VulkanRenderer::createResourceGroup(const ResourceGroupDesc& desc) {
-    ResourceGroupID id = nextGroupId_++;
-    groupNames_[id] = desc.debugName;
-    return id;
-}
-
-void VulkanRenderer::releaseResourceGroup(ResourceGroupID group) {
-    auto it = groupMembers_.find(group);
-    if (it == groupMembers_.end()) return;
-
-    //for (auto id : it->second.materials) { destroyMaterial(id);  materials_.erase(id); }
-    //for (auto id : it->second.techniques) { destroyTechnique(id); techniques_.erase(id); }
-    //for (auto id : it->second.geometry) { destroyGeometry(id);  geometryBuffers_.erase(id); }
-
-    groupMembers_.erase(it);
-    EMBER_LOG_INFO("Released resource group '{}'", groupNames_[group]);
-    groupNames_.erase(group);
-}
-
-TechniqueID VulkanRenderer::registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) {
-    TechniqueID id = nextTechniqueId_++;
-    //techniquePipelines_[id] = compilePipeline(desc); // expensive, done once
-    groupMembers_[group].techniques.push_back(id);
-    return id;
-}
-
-MaterialID VulkanRenderer::registerMaterial(const MaterialDesc& desc, ResourceGroupID group) {
-    MaterialID id = nextMaterialId_++;
-    //materials_[id] = compileMaterial(desc); // expensive, done once
-    groupMembers_[group].materials.push_back(id);
-    return id;
-}
-
-GeometryID VulkanRenderer::registerGeometry(const GeometryDesc& desc, ResourceGroupID group) {
-    GeometryID id = nextGeometryId_++;
-    //geometryPipelines_[id] = compilePipeline(desc); // expensive, done once
-    groupMembers_[group].geometries.push_back(id);
-    return id;
-}
-
 void VulkanRenderer::beginFrame() {
-    // Implement frame begin logic
+    FrameContext& frame = frames_[currentFrameIndex_];
+
+    auto device = context_->getDevice();
+
+    vkWaitForFences(device, 1, &frame.inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &frame.inFlightFence);
+
+    // reset pool to free previous buffers in one call
+    vkResetCommandPool(device, frame.commandPool, 0);
+
+    VkCommandBufferBeginInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    info.pInheritanceInfo = nullptr;
+
+    vkBeginCommandBuffer(frame.commandBuffer, &info);
 }
 
 void VulkanRenderer::submitPass(const RendererPass& pass) {
@@ -103,20 +73,21 @@ void VulkanRenderer::submitPass(const RendererPass& pass) {
 
     for (const auto& packet : pass.queue) {
         if (packet.materialId != currentMaterial) {
+            auto material = resourceCache_->ResolveMaterial(packet.materialId);
             currentMaterial = packet.materialId;
-            //VkPipeline pipeline = lookupPipelineForMaterial(packet.materialId); // cheap lookup
-            //vkCmdBindPipeline(cmdBuf_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         }
         // bind per-draw data, vkCmdDrawIndexed, etc.
     }
 }
 
 void VulkanRenderer::endFrame() {
-    // Implement frame end logic
+    FrameContext& frame = frames_[currentFrameIndex_];
+    vkEndCommandBuffer(frame.commandBuffer);
 }
 
 void VulkanRenderer::present() {
     // Implement present logic
+    FrameContext& frame = frames_[currentFrameIndex_];
 }
 
 void VulkanRenderer::resizeFramebuffer(uint32_t width, uint32_t height) {
@@ -124,8 +95,45 @@ void VulkanRenderer::resizeFramebuffer(uint32_t width, uint32_t height) {
     config_.height = height;
 }
 
+bool VulkanRenderer::createFrameResources()
+{
+    frames_.resize(framesInFlight_);
+    for (uint32_t i = 0; i < framesInFlight_; ++i) {
+        FrameContext& f = frames_[i];
+        // Create a resettable per-frame command pool via VulkanContext helper
+        context_->createCommandPool(context_->getGraphicsQueueFamily(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &f.commandPool);
+
+        // Allocate a primary command buffer from that pool
+        context_->allocateCommandBuffers(f.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &f.commandBuffer);
+
+        // Create fence and semaphores (renderer creates/destroys these)
+        // vkCreateFence(... &f.inFlightFence)
+        // vkCreateSemaphore(... &f.imageAvailable), vkCreateSemaphore(... &f.renderFinished)
+    }
+
+    return true;
+}
+
+void VulkanRenderer::destroyFrameResources()
+{
+    for (uint32_t i = 0; i < framesInFlight_; ++i) {
+        FrameContext& f = frames_[i];
+        // Destroy fence and semaphores
+        // vkDestroyFence(... f.inFlightFence)
+        // vkDestroySemaphore(... f.imageAvailable), vkDestroySemaphore(... f.renderFinished)
+        // Free command buffer and destroy command pool
+        context_->freeCommandBuffers(f.commandPool, 1, &f.commandBuffer);
+		context_->destroyCommandPool(f.commandPool);
+    }
+}
+
 RendererPtr createRenderer(const RendererConfig& config, platform::SurfaceProvider* provider) {
-    auto renderer = std::make_unique<VulkanRenderer>(config);
+    auto context = std::make_shared<VulkanContextVma>(config);
+    
+	ResourceCacheConfig resourceCacheConfig;
+    auto resourceCache = std::make_shared<VulkanResourceCacheVma>(resourceCacheConfig, context);
+
+    auto renderer = std::make_unique<VulkanRenderer>(config, context, resourceCache);
     if (renderer->initialize(provider)) {
         return renderer;
     }

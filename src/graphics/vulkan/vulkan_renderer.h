@@ -5,33 +5,25 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-#include "vulkan_context.h"
+#include "vulkan_context_vma.h"
+#include "resource_records.h"
+#include "vulkan_resource_cache_vma.h"
 
 namespace ember::graphics::vulkan {
 
 /**
- * Vulkan renderer implementation
+ * @brief Vulkan renderer implementation
  */
 class VulkanRenderer : public Renderer {
 public:
-    explicit VulkanRenderer(const RendererConfig& config);
+    explicit VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContextVma> context, std::shared_ptr<VulkanResourceCacheVma> resourceCache);
     ~VulkanRenderer() override;
-
+    
     bool initialize(platform::SurfaceProvider* provider) override;
     void shutdown() override;
 
-    void clearAllResources() override;
-    ResourceGroupID createResourceGroup(const ResourceGroupDesc& desc) override;
-    void releaseResourceGroup(ResourceGroupID group) override;
-
-    TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) override;
-    MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group) override;
-    GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group) override;
-    void unregisterTechnique(TechniqueID id) override;
-    void unregisterMaterial(MaterialID id) override;
-    void unregisterGeometry(GeometryID id) override;
+    ResourceCache& getResourceCache() override { return *resourceCache_; }
 
     void beginFrame() override;
     void submitPass(const RendererPass& pass) override;
@@ -40,20 +32,26 @@ public:
     void resizeFramebuffer(uint32_t width, uint32_t height) override;
 
 private:
-    struct ResourceGroupMembers {
-        std::vector<TechniqueID> techniques;
-        std::vector<MaterialID> materials;
-        std::vector<GeometryID> geometries;
+    bool createFrameResources();
+    void destroyFrameResources();
+
+private:
+    struct FrameContext {
+        VkCommandPool commandPool = VK_NULL_HANDLE;
+        VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+        VkFence inFlightFence = VK_NULL_HANDLE;
+        VkSemaphore imageAvailable = VK_NULL_HANDLE;
+        VkSemaphore renderFinished = VK_NULL_HANDLE;
 	};
 
+    std::shared_ptr<VulkanContextVma> context_;
+    std::shared_ptr<VulkanResourceCacheVma> resourceCache_;
+
+    std::vector<FrameContext> frames_;
+    uint32_t currentFrameIndex_ = 0;
+    uint32_t framesInFlight_ = 2;
+
     RendererConfig config_;
-    std::unique_ptr<VulkanContext> context_;
-    ResourceGroupID nextGroupId_ = BuiltinResourceGroup::Custom;
-    TechniqueID nextTechniqueId_ = BuiltinTechnique::Custom;
-    MaterialID nextMaterialId_ = BuiltinMaterial::Custom;
-    GeometryID nextGeometryId_ = BuiltinGeometry::Custom;
-    std::unordered_map<ResourceGroupID, ResourceGroupMembers> groupMembers_;
-    std::unordered_map<ResourceGroupID, std::string> groupNames_;
 };
 
 /**
