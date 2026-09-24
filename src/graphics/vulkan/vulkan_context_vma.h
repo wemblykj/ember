@@ -22,6 +22,8 @@ public:
     bool initialize(const std::vector<const char*>& extensions) override;
     void shutdown() override;
 
+    void waitIdle() override;
+
     VkInstance getInstance() const override { return instance_; }
     VkPhysicalDevice getPhysicalDevice() const override { return physicalDevice_; }
     VkDevice getDevice() const override { return device_; }
@@ -36,6 +38,7 @@ public:
     void endOneTimeCommands(VkCommandBuffer cmd) override;
     VkResult createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory) override;
     void destroyBuffer(VkBuffer buffer, AllocationHandle memory) override;
+    VkResult createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory) override;
 
 private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }

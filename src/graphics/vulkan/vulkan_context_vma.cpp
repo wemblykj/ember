@@ -1,18 +1,13 @@
 #include "vulkan_context_vma.h"
 
+#define VMA_IMPLEMENTATION
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vk_mem_alloc.h>
 
 namespace ember::graphics::vulkan {
 
-VulkanContextVma::VulkanContextVma()
-    : instance_(VK_NULL_HANDLE),
-      physicalDevice_(VK_NULL_HANDLE),
-      device_(VK_NULL_HANDLE),
-      graphicsQueue_(VK_NULL_HANDLE),
-      graphicsQueueFamily_(0),
-      commandPool_(VK_NULL_HANDLE),
-      allocator_(VK_NULL_HANDLE),
-      initialized_(false) {
+VulkanContextVma::VulkanContextVma() {
 }
 
 VulkanContextVma::~VulkanContextVma() {
@@ -102,8 +97,13 @@ void VulkanContextVma::shutdown() {
     EMBER_LOG_INFO("VulkanContextVma shutdown complete");
 }
 
+void VulkanContextVma::waitIdle()
+{
+    vkDeviceWaitIdle(device_);
+}
+
 VkResult VulkanContextVma::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags,
-	VkCommandPool* outPool)
+                                             VkCommandPool* outPool)
 {
     VkCommandPoolCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -153,7 +153,7 @@ VkCommandBuffer VulkanContextVma::beginOneTimeCommands()
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
+    
 	return commandBuffer;
 }
 
@@ -174,19 +174,19 @@ void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd)
 
 VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory)
 {
-    VkBuffer buffer;
-    VkDeviceMemory memory;
-
-    VkBufferCreateInfo info{
+    VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.flags = 0,
         .size = size,
-        .usage = usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .usage = usage
     };
 	
+    VmaAllocationCreateInfo allocInfo = {
+        .usage = VMA_MEMORY_USAGE_AUTO
+    };
+    
     VmaAllocation allocation;
-    VkResult result = vmaCreateBuffer(allocator_, &info, nullptr, outBuffer, &allocation, nullptr);
+    VkResult result = vmaCreateBuffer(allocator_, &bufferInfo, &allocInfo, outBuffer, &allocation, nullptr);
     if (result == VK_SUCCESS) {
         *outMemory = toAllocationHandle(allocation);
     }
@@ -197,6 +197,28 @@ VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags us
 void VulkanContextVma::destroyBuffer(VkBuffer buffer, AllocationHandle memory)
 {
     vmaDestroyBuffer(allocator_, buffer, toVma(memory));
+}
+
+VkResult VulkanContextVma::createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory)
+{
+    VkImageCreateInfo bufferInfo{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags = 0,
+        .imageType = type,
+        .usage = usage
+    };
+
+    VmaAllocationCreateInfo allocInfo = {
+        .usage = VMA_MEMORY_USAGE_AUTO
+    };
+
+    VmaAllocation allocation;
+    VkResult result = vmaCreateImage(allocator_, &bufferInfo, &allocInfo, outImage, &allocation, nullptr);
+    if (result == VK_SUCCESS) {
+        *outMemory = toAllocationHandle(allocation);
+    }
+
+    return result;
 }
 
 bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
@@ -239,13 +261,21 @@ bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
 
 bool VulkanContextVma::createMemoryAllocator()
 {
-    VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.physicalDevice = physicalDevice_;
-    allocatorInfo.device = device_;
-    allocatorInfo.instance = instance_;
-    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+    // fetching pointers to Vulkan functions dynamically
+    // https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html
+    VmaVulkanFunctions vulkanFunctions = {
+        .vkGetInstanceProcAddr = &vkGetInstanceProcAddr,
+		.vkGetDeviceProcAddr = &vkGetDeviceProcAddr
+    };
+    
+    VmaAllocatorCreateInfo allocatorCreateInfo = {};
+    allocatorCreateInfo.physicalDevice = physicalDevice_;
+    allocatorCreateInfo.device = device_;
+    allocatorCreateInfo.instance = instance_;
+    allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+    allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
 
-    VkResult result = vmaCreateAllocator(&allocatorInfo, &allocator_);
+    VkResult result = vmaCreateAllocator(&allocatorCreateInfo, &allocator_);
     if (result != VK_SUCCESS) {
         EMBER_LOG_ERROR("vmaCreateAllocator failed with code: {}", std::to_string(result));
         return false;

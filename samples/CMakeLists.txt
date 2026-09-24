@@ -16,7 +16,7 @@ target_include_directories(ember_sample PRIVATE
 target_link_libraries(ember_sample PRIVATE
     ember_core
     ember_platform
-    #ember_graphics
+    ember_graphics
 )
 
 target_compile_features(ember_sample PRIVATE cxx_std_20)

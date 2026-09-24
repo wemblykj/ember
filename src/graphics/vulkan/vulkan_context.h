@@ -15,7 +15,7 @@ struct AllocationHandle {
 */
 class VulkanContext {
 public:
-    virtual ~VulkanContext();
+    virtual ~VulkanContext() = default;
 
     virtual bool initialize(const std::vector<const char*>& extensions) = 0;
     virtual void shutdown() = 0;
@@ -25,6 +25,12 @@ public:
     virtual VkDevice getDevice() const = 0;
     virtual VkQueue getGraphicsQueue() const = 0;
     virtual uint32_t getGraphicsQueueFamily() const = 0;
+
+	/**
+	 * @brief Waits for the device to become idle. This function blocks until all submitted
+	 * commands have been completed.
+	 */
+    virtual void waitIdle() = 0;
 
     /**
     * @brief Creates a command pool for the specified queue family index and flags. The created command pool is returned in outPool.
@@ -87,6 +93,8 @@ public:
     * @param memory The memory to free.
     */
     virtual void destroyBuffer(VkBuffer buffer, AllocationHandle memory) = 0;
+
+    virtual VkResult createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory) = 0;
 };
 
 }  // namespace ember::graphics::vulkan

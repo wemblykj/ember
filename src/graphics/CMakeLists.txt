@@ -9,7 +9,7 @@ target_sources(ember_graphics PRIVATE
     vulkan/vulkan_context_vma.cpp
     vulkan/vulkan_resource_cache.cpp
     vulkan/vulkan_renderer.cpp
-    vulkan/sdl3_vulkan_surface_provider.cpp
+    vulkan/vulkan_surface_provider_sdl3.cpp
 )
 
 target_sources(ember_graphics PUBLIC
@@ -20,8 +20,11 @@ target_sources(ember_graphics PUBLIC
         resources.h
         render_packet.h
         renderer.h
+        surface_provider.h
+        vulkan/vulkan_context.h
+        vulkan/vulkan_renderer.h
         vulkan/vulkan_surface_provider.h
-        vulkan/sdl3_vulkan_surface_provider.h
+        vulkan/vulkan_surface_provider_sdl3.h
 )
 
 target_include_directories(ember_graphics PUBLIC
@@ -30,8 +33,12 @@ target_include_directories(ember_graphics PUBLIC
 )
 
 target_link_libraries(ember_graphics PRIVATE
-    Vulkan::Headers
+    Vulkan::Vulkan
     GPUOpen::VulkanMemoryAllocator
+)
+
+target_link_libraries(ember_graphics PUBLIC
+    Vulkan::Headers
 )
 
 target_link_libraries(ember_graphics PUBLIC

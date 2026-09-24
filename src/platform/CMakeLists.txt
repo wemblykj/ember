@@ -30,7 +30,6 @@ target_sources(ember_platform PUBLIC
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
         ember_platform.h
-        surface_provider.h
 )
 
 target_include_directories(ember_platform PUBLIC

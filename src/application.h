@@ -24,7 +24,9 @@ public:
 
 private:
     platform::WindowPtr window_;
+	graphics::SurfaceProviderPtr surfaceProvider_;
     graphics::RendererPtr renderer_;
+
     bool isRunning_ = false;
 };
 

@@ -1,14 +1,11 @@
 #pragma once
 
-#include <algorithm>
 #include <memory>
-#include <string>
 #include <vector>
-#include <ember_math.h>
 
 #include <graphics_api.h>
-#include <surface_provider.h>
 
+#include "surface_provider.h"
 #include "resource_cache.h"
 #include "render_packet.h"
 
@@ -32,7 +29,7 @@ class Renderer {
 public:
     virtual ~Renderer() = default;
 
-    virtual bool initialize(platform::SurfaceProvider* provider) = 0;
+    virtual bool initialize(SurfaceProvider* provider) = 0;
     virtual void shutdown() = 0;
 
 	/// @brief Get the resource cache associated with this renderer. The resource cache manages techniques, materials, and geometries used for rendering. This method returns a pointer to the ResourceCache interface, allowing access to resource management functions.

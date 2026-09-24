@@ -4,11 +4,11 @@
 
 #include <vulkan/vulkan.h>
 
-#include <surface_provider.h>
+#include "surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
-class VulkanSurfaceProvider : public platform::SurfaceProvider {
+class VulkanSurfaceProvider : public SurfaceProvider {
 public:
     // Called before vkCreateInstance — return instance extension names SDL requires.
     virtual std::vector<const char*> getRequiredInstanceExtensions() const = 0;
@@ -17,4 +17,4 @@ public:
     virtual bool createSurface(VkInstance instance, VkSurfaceKHR &outSurface) = 0;
 };
 
-} // namespace ember::platform
+} // namespace ember::graphics::vulkan

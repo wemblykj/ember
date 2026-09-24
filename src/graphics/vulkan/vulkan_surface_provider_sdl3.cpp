@@ -1,13 +1,13 @@
-#include "sdl3_vulkan_surface_provider.h"
+#include "vulkan_surface_provider_sdl3.h"
 
 #include <vector>
 
 #include <SDL3/SDL_vulkan.h>
 #include <SDL3/SDL_video.h>
 
-namespace ember::graphics {
+namespace ember::graphics::vulkan {
 
-std::vector<const char*> SDL3VulkanSurfaceProvider::getRequiredInstanceExtensions() const {
+std::vector<const char*> VulkanSurfaceProviderSDL3::getRequiredInstanceExtensions() const {
     std::vector<const char*> out;
 
     if (!window_) return out;
@@ -21,7 +21,7 @@ std::vector<const char*> SDL3VulkanSurfaceProvider::getRequiredInstanceExtension
     return out;
 }
 
-bool SDL3VulkanSurfaceProvider::createSurface(VkInstance instance, VkSurfaceKHR &outSurface) {
+bool VulkanSurfaceProviderSDL3::createSurface(VkInstance instance, VkSurfaceKHR &outSurface) {
     if (!window_) return false;
 
     auto sdlWindow = reinterpret_cast<SDL_Window*>(window_->getNativeHandle());
@@ -33,4 +33,11 @@ bool SDL3VulkanSurfaceProvider::createSurface(VkInstance instance, VkSurfaceKHR 
     return true;
 }
 
-} // namespace ember::platform
+SurfaceProviderPtr createSDLSurfaceProvider(platform::Window* window)
+{
+    auto provider = std::make_unique<VulkanSurfaceProviderSDL3>(window);
+
+    return provider;
+}
+
+} // namespace ember::graphics::vulkan

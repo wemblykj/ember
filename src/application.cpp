@@ -1,6 +1,9 @@
 #include "application.h"
+
 #include "platform/sdl3/sdl3_window.h"
-//#include "graphics/vulkan/vulkan_renderer.h"
+
+#include "graphics/vulkan/vulkan_renderer.h"
+#include "graphics/vulkan/vulkan_surface_provider_sdl3.h"
 
 namespace ember {
 
@@ -24,14 +27,14 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
         return false;
     }
 
+    surfaceProvider_ = graphics::vulkan::createSDLSurfaceProvider(window_.get());
+
     // Create renderer
-    /*
-    renderer_ = graphics::vulkan::createRenderer(rendererConfig, window_.get());
+    renderer_ = graphics::vulkan::createRenderer(rendererConfig, surfaceProvider_.get());
     if (!renderer_) {
         EMBER_LOG_ERROR("Failed to create renderer");
         return false;
     }
-	*/
 
     isRunning_ = true;
 
@@ -62,13 +65,11 @@ void Application::shutdown() {
 
     isRunning_ = false;
 
-    /*
     if (renderer_) {
         renderer_->shutdown();
         renderer_.reset();
     }
-	*/
-
+	
     if (window_) {
         window_.reset();
     }
