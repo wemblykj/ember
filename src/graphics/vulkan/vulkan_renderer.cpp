@@ -48,6 +48,8 @@ bool VulkanRenderer::initialize(SurfaceProvider* provider) {
                 EMBER_LOG_ERROR("Failed to create swapchain");
                 return false;
 			}
+
+            imagesInFlight_.resize(swapchainImages_.size(), VK_NULL_HANDLE);
         }
     }
     else {
@@ -72,8 +74,11 @@ void VulkanRenderer::shutdown() {
 
     destroyFrameResources();
 
-    if (surface_ != VK_NULL_HANDLE) {
+    if (swapchain_ != VK_NULL_HANDLE) {
         destroySwapchain();
+	}
+
+    if (surface_ != VK_NULL_HANDLE) {
         vkDestroySurfaceKHR(context_->getInstance(), surface_, nullptr);
         surface_ = VK_NULL_HANDLE;
     }
@@ -88,6 +93,29 @@ void VulkanRenderer::shutdown() {
     EMBER_LOG_INFO("Vulkan renderer shutdown");
 }
 
+void VulkanRenderer::aquireNextImage(FrameContext& frame, VkDevice device)
+{
+    VkResult result = vkAcquireNextImageKHR(device, swapchain_, UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &frame.swapchainImageIndex);
+
+	if (result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            EMBER_LOG_WARN("Swapchain is out of date or suboptimal, recreating swapchain");
+            recreateSwapchain();
+
+            return;
+        }
+
+		EMBER_LOG_ERROR("Failed to acquire next swapchain image");
+	}
+
+    // If a previous frame is still using this image, wait for it.
+    if (imagesInFlight_[frame.swapchainImageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(device, 1, &imagesInFlight_[frame.swapchainImageIndex], VK_TRUE, UINT64_MAX);
+    }
+
+    imagesInFlight_[frame.swapchainImageIndex] = frame.inFlightFence;
+}
+
 void VulkanRenderer::beginFrame() {
     FrameContext& frame = frames_[currentFrameIndex_];
 
@@ -95,6 +123,9 @@ void VulkanRenderer::beginFrame() {
 
     vkWaitForFences(device, 1, &frame.inFlightFence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &frame.inFlightFence);
+
+    // request image from the swapchain
+    aquireNextImage(frame, device);
 
     // reset pool to free previous buffers in one call
     vkResetCommandPool(device, frame.commandPool, 0);
@@ -120,13 +151,52 @@ void VulkanRenderer::submitPass(const RendererPass& pass) {
 }
 
 void VulkanRenderer::endFrame() {
+    VkDevice device = context_->getDevice();
+
     FrameContext& frame = frames_[currentFrameIndex_];
     vkEndCommandBuffer(frame.commandBuffer);
+
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &frame.imageAvailable,
+        .pWaitDstStageMask = waitStages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &frame.commandBuffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &frame.renderFinished,
+    };
+
+    if (vkQueueSubmit(context_->getGraphicsQueue(), 1, &submitInfo, frame.inFlightFence) != VK_SUCCESS) {
+        EMBER_LOG_ERROR("Failed to submit draw command buffer");
+    }
 }
 
 void VulkanRenderer::present() {
+    VkDevice device = context_->getDevice();
+
     // Implement present logic
     FrameContext& frame = frames_[currentFrameIndex_];
+
+    VkPresentInfoKHR presentInfo = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &frame.renderFinished,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain_,
+        .pImageIndices = &frame.swapchainImageIndex
+    };
+    
+    VkResult result = vkQueuePresentKHR(context_->getGraphicsQueue(), &presentInfo);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        EMBER_LOG_WARN("Swapchain is out of date or suboptimal, recreating swapchain");
+        recreateSwapchain();
+    } else if (result != VK_SUCCESS) {
+        EMBER_LOG_ERROR("Failed to present swapchain image");
+	}
+
+    currentFrameIndex_ = (currentFrameIndex_ + 1) % framesInFlight_;
 }
 
 void VulkanRenderer::resizeFramebuffer(uint32_t width, uint32_t height) {
@@ -227,7 +297,7 @@ bool VulkanRenderer::createSwapchain() {
     // If replacing existing swapchain, destroy old resources after creating new one
     if (swapchain_ != VK_NULL_HANDLE) {
         // optionally keep oldSwapchain to pass into new create info for seamless transition
-        vkDeviceWaitIdle(device);
+        context_->waitIdle();
         destroySwapchain(); // cleanup previous image views/framebuffers and old swapchain
     }
 
@@ -290,20 +360,41 @@ void VulkanRenderer::destroySwapchain() {
     swapchainImages_.clear();
 }
 
+void VulkanRenderer::recreateSwapchain()
+{
+	// will destroy old swapchain and create a new one
+    createSwapchain();
+    imagesInFlight_.resize(swapchainImages_.size(), VK_NULL_HANDLE);
+}
+
 bool VulkanRenderer::createFrameResources()
 {
+	VkDevice device = context_->getDevice();
+    uint32_t queueFamilyIndex = context_->getGraphicsQueueFamily();
+
+    VkFenceCreateInfo fenceCreateInfo{
+	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+	    .flags = VK_FENCE_CREATE_SIGNALED_BIT
+    };
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo{
+	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	    .flags = 0
+    };
+
     frames_.resize(framesInFlight_);
     for (uint32_t i = 0; i < framesInFlight_; ++i) {
-        FrameContext& f = frames_[i];
+        FrameContext& frame = frames_[i];
         // Create a resettable per-frame command pool via VulkanContext helper
-        context_->createCommandPool(context_->getGraphicsQueueFamily(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &f.commandPool);
+        context_->createCommandPool(queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &frame.commandPool);
 
         // Allocate a primary command buffer from that pool
-        context_->allocateCommandBuffers(f.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &f.commandBuffer);
+        context_->allocateCommandBuffers(frame.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &frame.commandBuffer);
 
         // Create fence and semaphores (renderer creates/destroys these)
-        // vkCreateFence(... &f.inFlightFence)
-        // vkCreateSemaphore(... &f.imageAvailable), vkCreateSemaphore(... &f.renderFinished)
+        vkCreateFence(device, &fenceCreateInfo, nullptr, &frame.inFlightFence);
+        vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.imageAvailable);
+        vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.renderFinished);
     }
 
     return true;
@@ -311,11 +402,16 @@ bool VulkanRenderer::createFrameResources()
 
 void VulkanRenderer::destroyFrameResources()
 {
+    VkDevice device = context_->getDevice();
+
     for (uint32_t i = 0; i < framesInFlight_; ++i) {
         FrameContext& f = frames_[i];
+
         // Destroy fence and semaphores
-        // vkDestroyFence(... f.inFlightFence)
-        // vkDestroySemaphore(... f.imageAvailable), vkDestroySemaphore(... f.renderFinished)
+        vkDestroySemaphore(device, f.renderFinished, nullptr);
+        vkDestroySemaphore(device, f.imageAvailable, nullptr);
+        vkDestroyFence(device, f.inFlightFence, nullptr);
+		
         // Free command buffer and destroy command pool
         context_->freeCommandBuffers(f.commandPool, 1, &f.commandBuffer);
 		context_->destroyCommandPool(f.commandPool);

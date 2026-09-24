@@ -25,6 +25,8 @@ public:
     virtual VkDevice getDevice() const = 0;
     virtual VkQueue getGraphicsQueue() const = 0;
     virtual uint32_t getGraphicsQueueFamily() const = 0;
+    virtual VkQueue getPresentQueue() const = 0;
+    virtual uint32_t getPresentQueueFamily() const = 0;
 
 	/**
 	 * @brief Waits for the device to become idle. This function blocks until all submitted

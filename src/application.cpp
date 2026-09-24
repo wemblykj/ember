@@ -47,14 +47,22 @@ void Application::run() {
 
     EMBER_LOG_INFO("Starting application main loop...");
 
+    auto lastTime = std::chrono::high_resolution_clock::now();
+
     while (isRunning_ && !window_->shouldClose()) {
+        // Calculate delta time
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(
+            currentTime - lastTime
+        ).count();
+        lastTime = currentTime;
+
         window_->pollEvents();
 
-        /*
         renderer_->beginFrame();
         // Application logic goes here
         renderer_->endFrame();
-        renderer_->present();*/
+        renderer_->present();
     }
 
     EMBER_LOG_INFO("Application main loop ended");

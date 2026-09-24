@@ -33,35 +33,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Create sample scene
-    /*
-    samples::SampleScene scene;
-    if (!scene.initialize(app.getRenderer())) {
-        EMBER_LOG_ERROR("Failed to initialize sample scene");
-        app.shutdown();
-        return 1;
-    }*/
-
-    // Main loop with delta time calculation
-    auto lastTime = std::chrono::high_resolution_clock::now();
-    
-    while (app.getWindow() && !app.getWindow()->shouldClose()) {
-        // Calculate delta time
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(
-            currentTime - lastTime
-        ).count();
-        lastTime = currentTime;
-
-        // Poll window events
-        app.getWindow()->pollEvents();
-
-        // Update scene
-        //scene.update(deltaTime);
-
-        // Render frame
-        //scene.render();
-    }
+    app.run();
 
     // Cleanup
     //scene.shutdown();

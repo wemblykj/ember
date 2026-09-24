@@ -14,12 +14,22 @@ namespace ember::graphics::vulkan {
  * @brief Vulkan renderer implementation
  */
 class VulkanRenderer : public Renderer {
+    struct FrameContext {
+        uint32_t swapchainImageIndex;
+        VkCommandPool commandPool = VK_NULL_HANDLE;
+        VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+        VkFence inFlightFence = VK_NULL_HANDLE;
+        VkSemaphore imageAvailable = VK_NULL_HANDLE;
+        VkSemaphore renderFinished = VK_NULL_HANDLE;
+    };
+
 public:
     explicit VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContext> context, std::shared_ptr<VulkanResourceCache> resourceCache);
     ~VulkanRenderer() override;
     
     bool initialize(SurfaceProvider* provider) override;
     void shutdown() override;
+    void aquireNextImage(FrameContext& frame, VkDevice device);
 
     ResourceCache& getResourceCache() override { return *resourceCache_; }
 
@@ -28,14 +38,14 @@ public:
     void endFrame() override;
     void present() override;
     void resizeFramebuffer(uint32_t width, uint32_t height) override;
-
-
+    
 private:
     std::vector<const char*> getRequiredExtensions();
     VkSurfaceKHR getSurface() const { return surface_; }
 
     bool createSwapchain();
     void destroySwapchain();
+    void recreateSwapchain();
     bool createFrameResources();
     void destroyFrameResources();
 
@@ -47,13 +57,6 @@ private:
     uint32_t chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabilities, uint32_t preferredCount = 2);
 
 private:
-    struct FrameContext {
-        VkCommandPool commandPool = VK_NULL_HANDLE;
-        VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-        VkFence inFlightFence = VK_NULL_HANDLE;
-        VkSemaphore imageAvailable = VK_NULL_HANDLE;
-        VkSemaphore renderFinished = VK_NULL_HANDLE;
-	};
 
     bool initialized_ = false;
     std::shared_ptr<VulkanContext> context_;
@@ -66,6 +69,7 @@ private:
     std::vector<VkImageView> swapchainImageViews_;
 
     std::vector<FrameContext> frames_;
+    std::vector<VkFence> imagesInFlight_;
     uint32_t currentFrameIndex_ = 0;
     uint32_t framesInFlight_ = 2;
 

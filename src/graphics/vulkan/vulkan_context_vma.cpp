@@ -47,8 +47,9 @@ bool VulkanContextVma::initialize(const std::vector<const char*>& extensions) {
 		}
 
         // Create one time command pool
-		if (!createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &commandPool_)) {
-            EMBER_LOG_ERROR("Failed to create one time command pool");
+        VkResult result = createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &commandPool_);
+		if (result != VK_SUCCESS) {
+            EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
             return false;
         }
 
