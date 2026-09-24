@@ -4,7 +4,6 @@
 #include <map>
 
 #include "vulkan_context_vma.h"
-#include "vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
@@ -18,42 +17,60 @@ VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::initialize(SurfaceProvider* provider) {
+bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
     using namespace ember::core;
 
     EMBER_LOG_INFO("Initializing Vulkan renderer...");
-
-    auto vulkanProvider = dynamic_cast<VulkanSurfaceProvider*>(provider);
-
-    if (!vulkanProvider) {
-        EMBER_LOG_ERROR("SurfaceProvider is not a VulkanSurfaceProvider");
-        return false;
-    }
 
     // Get required extensions
     std::vector<const char*> extensions = getRequiredExtensions();
 
     // Create surface if window provided (for desktop rendering)
-    if (vulkanProvider) {
-        std::vector<const char*> surfaceExtensions = vulkanProvider->getRequiredInstanceExtensions();
-        extensions.insert(extensions.end(), surfaceExtensions.begin(), surfaceExtensions.end());
-    }
+    if (surfaceProvider) {
+        surfaceProvider_ = std::dynamic_pointer_cast<VulkanSurfaceProvider>(surfaceProvider);
 
-	context_->initialize(extensions);
-
-    // Create surface if window provided (for desktop rendering)
-    if (vulkanProvider) {
-        if (vulkanProvider->createSurface(context_->getInstance(), surface_)) {
-            if (!createSwapchain()) {
-                EMBER_LOG_ERROR("Failed to create swapchain");
-                return false;
-			}
-
-            imagesInFlight_.resize(swapchainImages_.size(), VK_NULL_HANDLE);
+        if (!surfaceProvider_) {
+            EMBER_LOG_ERROR("SurfaceProvider is not a VulkanSurfaceProvider");
+            return false;
         }
+
+        // add surface extensions to the list of required extensions
+        std::vector<const char*> surfaceExtensions = surfaceProvider_->getRequiredInstanceExtensions();
+        extensions.insert(extensions.end(), surfaceExtensions.begin(), surfaceExtensions.end());
+
+        // add swapchain extension to the list of required extensions
+        //extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
-    else {
-        EMBER_LOG_WARN("SurfaceProvider is null, skipping surface creation");
+
+	auto instance = context_->createInstance(extensions);
+	if (instance == VK_NULL_HANDLE) {
+		EMBER_LOG_ERROR("Failed to create Vulkan instance");
+		return false;
+	}
+
+    if (surfaceProvider_) {
+		// create a surface for the window
+        if (!surfaceProvider_->createSurface(context_->getInstance(), surface_)) {
+            EMBER_LOG_WARN("Surface is null, skipping presentation support check");
+            return false;
+        }
+
+		// create a device that supports presentation to the surface
+        context_->createDevice(
+            And(
+                DeviceSelector::graphics, 
+                [this](const CandidateDevice& candidate) {
+                    VkBool32 supported = VK_FALSE;
+                    for (uint32_t i = 0; i < candidate.queueFamilies.size(); ++i)
+                    {
+                        vkGetPhysicalDeviceSurfaceSupportKHR(candidate.device, i, surface_, &supported);
+                    }
+                    
+                    return supported == VK_TRUE ? 1 : 0;
+                }));
+    } else {
+        context_->createDevice(DeviceSelector::graphics);
+        EMBER_LOG_WARN("SurfaceProvider is null, skipping presentation");
     }
 
     createFrameResources();
@@ -84,7 +101,7 @@ void VulkanRenderer::shutdown() {
     }
 
     if (context_) {
-        context_->shutdown();
+        context_->destroy();
         context_.reset();
     }
 
@@ -478,7 +495,7 @@ uint32_t VulkanRenderer::chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabi
     return std::clamp(preferredCount, capabilities.minImageCount, capabilities.maxImageCount);
 }
 
-RendererPtr createRenderer(const RendererConfig& config, SurfaceProvider* surfaceProvider) {
+RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider) {
     auto context = std::make_shared<VulkanContextVma>();
 
     ResourceCacheConfig resourceCacheConfig;

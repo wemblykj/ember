@@ -12,45 +12,63 @@ VulkanContextVma::VulkanContextVma() {
 
 VulkanContextVma::~VulkanContextVma() {
     if (initialized_) {
-        shutdown();
+        destroy();
     }
 }
 
-bool VulkanContextVma::initialize(const std::vector<const char*>& extensions) {
+VkInstance VulkanContextVma::createInstance(const std::vector<const char*>& extensions) {
     if (initialized_) {
         EMBER_LOG_WARN("VulkanContextVma already initialized");
-        return true;
+        return instance_;
     }
 
     try {
         // Create Vulkan instance
-        if (!createInstance(extensions)) {
+        if (!createInstanceImpl(extensions)) {
             EMBER_LOG_ERROR("Failed to create Vulkan instance");
-            return false;
+            return VK_NULL_HANDLE;
         }
 
+        initialized_ = true;
+        EMBER_LOG_INFO("VulkanContextVma initialized successfully");
+        return instance_;
+
+    } catch (const std::exception& e) {
+        EMBER_LOG_ERROR("VulkanContextVma initialization exception: {}", e.what());
+        destroy();
+        return VK_NULL_HANDLE;
+    }
+}
+
+VkPhysicalDevice VulkanContextVma::createDevice(DeviceSelectorCallback selector) {
+    if (!initialized_) {
+        EMBER_LOG_WARN("VulkanContextVma not initialized");
+        return VK_NULL_HANDLE;
+    }
+
+    try {   
         // Select physical device
-        if (!selectPhysicalDevice()) {
+        if (!selectPhysicalDevice(selector)) {
             EMBER_LOG_ERROR("Failed to select physical device");
-            return false;
+            return VK_NULL_HANDLE;
         }
 
         // Create logical device
         if (!createLogicalDevice()) {
             EMBER_LOG_ERROR("Failed to create logical device");
-            return false;
+            return VK_NULL_HANDLE;
         }
 
         if (!createMemoryAllocator()) {
             EMBER_LOG_ERROR("Failed to create Vulkan memory allocator");
-            return false;
-		}
+            return VK_NULL_HANDLE;
+        }
 
         // Create one time command pool
         VkResult result = createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &commandPool_);
-		if (result != VK_SUCCESS) {
+        if (result != VK_SUCCESS) {
             EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
-            return false;
+            return VK_NULL_HANDLE;
         }
 
         // Get graphics queue
@@ -58,16 +76,17 @@ bool VulkanContextVma::initialize(const std::vector<const char*>& extensions) {
 
         initialized_ = true;
         EMBER_LOG_INFO("VulkanContextVma initialized successfully");
-        return true;
+        return physicalDevice_;
 
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         EMBER_LOG_ERROR("VulkanContextVma initialization exception: {}", e.what());
-        shutdown();
-        return false;
+        destroy();
+        return VK_NULL_HANDLE;
     }
 }
 
-void VulkanContextVma::shutdown() {
+void VulkanContextVma::destroy() {
     if (!initialized_) {
         return;
     }
@@ -98,14 +117,12 @@ void VulkanContextVma::shutdown() {
     EMBER_LOG_INFO("VulkanContextVma shutdown complete");
 }
 
-void VulkanContextVma::waitIdle()
-{
+void VulkanContextVma::waitIdle() {
     vkDeviceWaitIdle(device_);
 }
 
 VkResult VulkanContextVma::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags,
-                                             VkCommandPool* outPool)
-{
+                                             VkCommandPool* outPool) {
     VkCommandPoolCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
     	.flags = flags,
@@ -115,14 +132,12 @@ VkResult VulkanContextVma::createCommandPool(uint32_t queueFamilyIndex, VkComman
 	return vkCreateCommandPool(device_, &info, nullptr, outPool);
 }
 
-void VulkanContextVma::destroyCommandPool(VkCommandPool pool)
-{
+void VulkanContextVma::destroyCommandPool(VkCommandPool pool) {
 	vkDestroyCommandPool(device_, pool, nullptr);
 }
 
 VkResult VulkanContextVma::allocateCommandBuffers(VkCommandPool pool, VkCommandBufferLevel level, uint32_t count,
-	VkCommandBuffer* outBuffers)
-{
+	VkCommandBuffer* outBuffers) {
     VkCommandBufferAllocateInfo info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = pool,
@@ -133,13 +148,11 @@ VkResult VulkanContextVma::allocateCommandBuffers(VkCommandPool pool, VkCommandB
 	return vkAllocateCommandBuffers(device_, &info, outBuffers);
 }
 
-void VulkanContextVma::freeCommandBuffers(VkCommandPool pool, uint32_t count, const VkCommandBuffer* buffers)
-{
+void VulkanContextVma::freeCommandBuffers(VkCommandPool pool, uint32_t count, const VkCommandBuffer* buffers) {
 	vkFreeCommandBuffers(device_, pool, count, buffers);
 }
 
-VkCommandBuffer VulkanContextVma::beginOneTimeCommands()
-{
+VkCommandBuffer VulkanContextVma::beginOneTimeCommands() {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -158,8 +171,7 @@ VkCommandBuffer VulkanContextVma::beginOneTimeCommands()
 	return commandBuffer;
 }
 
-void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd)
-{
+void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd) {
 	vkEndCommandBuffer(cmd);
 
 	VkSubmitInfo submitInfo{};
@@ -173,8 +185,7 @@ void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd)
 	vkFreeCommandBuffers(device_, commandPool_, 1, &cmd);
 }
 
-VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory)
-{
+VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory) {
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.flags = 0,
@@ -195,8 +206,7 @@ VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags us
     return result;
 }
 
-void VulkanContextVma::destroyBuffer(VkBuffer buffer, AllocationHandle memory)
-{
+void VulkanContextVma::destroyBuffer(VkBuffer buffer, AllocationHandle memory) {
     vmaDestroyBuffer(allocator_, buffer, toVma(memory));
 }
 
@@ -222,7 +232,7 @@ VkResult VulkanContextVma::createImage(VkDeviceSize size, VkImageType type, VkIm
     return result;
 }
 
-bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
+bool VulkanContextVma::createInstanceImpl(std::vector<const char*> extensions) {
     // Application info
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -260,8 +270,7 @@ bool VulkanContextVma::createInstance(std::vector<const char*> extensions) {
     return true;
 }
 
-bool VulkanContextVma::createMemoryAllocator()
-{
+bool VulkanContextVma::createMemoryAllocator() {
     // fetching pointers to Vulkan functions dynamically
     // https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html
     VmaVulkanFunctions vulkanFunctions = {
@@ -285,7 +294,7 @@ bool VulkanContextVma::createMemoryAllocator()
     return true;
 }
 
-bool VulkanContextVma::selectPhysicalDevice() {
+bool VulkanContextVma::selectPhysicalDevice(DeviceSelectorCallback selector) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
 
@@ -298,11 +307,15 @@ bool VulkanContextVma::selectPhysicalDevice() {
     vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
 
     // Select first suitable device
-    for (const auto& device : devices) {
-        VkPhysicalDeviceProperties props;
-        vkGetPhysicalDeviceProperties(device, &props);
+    EMBER_LOG_INFO("Enumerating devices");
 
-        EMBER_LOG_INFO("Found device: " + std::string(props.deviceName));
+    int bestScore = -1;
+    VkPhysicalDeviceProperties bestDeviceProperties{};
+    for (const auto& device : devices) {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        EMBER_LOG_INFO("Considering device: {}", deviceProperties.deviceName);
 
         // Check for graphics queue support
         uint32_t queueFamilyCount = 0;
@@ -311,14 +324,27 @@ bool VulkanContextVma::selectPhysicalDevice() {
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
+        
         for (uint32_t i = 0; i < queueFamilyCount; i++) {
-            if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                physicalDevice_ = device;
+            CandidateDevice candidate{
+                .device = device,
+                .deviceProperties = deviceProperties,
+                .queueFamilies = queueFamilies
+            };
+
+			int score = selector(candidate);
+            if (score > bestScore) {
+                bestScore = score;
+				bestDeviceProperties = deviceProperties;
+                physicalDevice_ = candidate.device;
                 graphicsQueueFamily_ = i;
-                EMBER_LOG_INFO("Selected device: " + std::string(props.deviceName));
-                return true;
             }
         }
+    }
+
+    if (bestScore >= 0) {
+        EMBER_LOG_INFO("Selected device: {}", bestDeviceProperties.deviceName);
+        return true;
     }
 
     EMBER_LOG_ERROR("No suitable physical device found");

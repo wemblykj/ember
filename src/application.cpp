@@ -30,7 +30,7 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
     surfaceProvider_ = graphics::vulkan::createSDLSurfaceProvider(window_.get());
 
     // Create renderer
-    renderer_ = graphics::vulkan::createRenderer(rendererConfig, surfaceProvider_.get());
+    renderer_ = graphics::vulkan::createRenderer(rendererConfig, surfaceProvider_);
     if (!renderer_) {
         EMBER_LOG_ERROR("Failed to create renderer");
         return false;

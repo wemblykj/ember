@@ -1,11 +1,36 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <vector>
 
 #include <vulkan/vulkan.h>
 
 namespace ember::graphics::vulkan {
 
+struct CandidateDevice {
+    const VkPhysicalDevice& device;
+    const VkPhysicalDeviceProperties& deviceProperties;
+    const std::vector<VkQueueFamilyProperties>& queueFamilies;
+};
+
+using DeviceSelectorCallback = std::function<int(const CandidateDevice&)>;
+
+inline DeviceSelectorCallback WithRequiredQueueFlags(VkQueueFlags flags) { return [flags](const CandidateDevice& c) { for (auto& q : c.queueFamilies) if ((q.queueFlags & flags) == flags) return 1; return 0; }; }
+inline DeviceSelectorCallback And(DeviceSelectorCallback a, DeviceSelectorCallback b) { return [a, b](const CandidateDevice& c) { return a(c) && b(c); }; }
+inline DeviceSelectorCallback Or(DeviceSelectorCallback a, DeviceSelectorCallback b) { return [a, b](const CandidateDevice& c) { return a(c) || b(c); }; }
+
+struct DeviceSelector {
+    inline static  DeviceSelectorCallback none = [](const CandidateDevice&) { return 0; };
+    inline static const DeviceSelectorCallback any = [](const CandidateDevice&) { return 1; };
+    inline static const DeviceSelectorCallback graphics = WithRequiredQueueFlags(VK_QUEUE_GRAPHICS_BIT);
+    inline static const DeviceSelectorCallback compute = WithRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT);
+};
+
+/**
+ * @brief Structure representing an allocation handle for Vulkan resources. This structure contains information about the backend used for memory allocation and an opaque handle to the allocated memory.
+ */
 struct AllocationHandle {
     enum class Backend : uint8_t { None = 0, Vma, Vk } backend = Backend::None; uintptr_t handle = 0; // opaque storage for backend-specific handle
 };
@@ -17,16 +42,15 @@ class VulkanContext {
 public:
     virtual ~VulkanContext() = default;
 
-    virtual bool initialize(const std::vector<const char*>& extensions) = 0;
-    virtual void shutdown() = 0;
+    virtual VkInstance createInstance(const std::vector<const char*>& extensions) = 0;
+    virtual VkPhysicalDevice createDevice(DeviceSelectorCallback selector = DeviceSelector::any) = 0;
+    virtual void destroy() = 0;
 
     virtual VkInstance getInstance() const = 0;
     virtual VkPhysicalDevice getPhysicalDevice() const = 0;
     virtual VkDevice getDevice() const = 0;
     virtual VkQueue getGraphicsQueue() const = 0;
     virtual uint32_t getGraphicsQueueFamily() const = 0;
-    virtual VkQueue getPresentQueue() const = 0;
-    virtual uint32_t getPresentQueueFamily() const = 0;
 
 	/**
 	 * @brief Waits for the device to become idle. This function blocks until all submitted
@@ -98,5 +122,7 @@ public:
 
     virtual VkResult createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory) = 0;
 };
+
+using VulkanContextPtr = std::shared_ptr<VulkanContext>;
 
 }  // namespace ember::graphics::vulkan

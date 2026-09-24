@@ -7,6 +7,7 @@
 
 #include "vulkan_context.h"
 #include "vulkan_resource_cache.h"
+#include "vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
@@ -27,7 +28,7 @@ public:
     explicit VulkanRenderer(const RendererConfig& config, std::shared_ptr<VulkanContext> context, std::shared_ptr<VulkanResourceCache> resourceCache);
     ~VulkanRenderer() override;
     
-    bool initialize(SurfaceProvider* provider) override;
+    bool initialize(SurfaceProviderPtr surfaceProvider) override;
     void shutdown() override;
     void aquireNextImage(FrameContext& frame, VkDevice device);
 
@@ -59,7 +60,8 @@ private:
 private:
 
     bool initialized_ = false;
-    std::shared_ptr<VulkanContext> context_;
+    VulkanSurfaceProviderPtr surfaceProvider_;
+    VulkanContextPtr context_;
     VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
     VkFormat swapchainImageFormat_;
@@ -80,6 +82,6 @@ private:
 /**
  * Factory function for creating Vulkan renderers
  */
-RendererPtr createRenderer(const RendererConfig& config, SurfaceProvider* provider);
+RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider);
 
 }  // namespace ember::graphics::vulkan

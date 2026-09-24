@@ -29,7 +29,7 @@ class Renderer {
 public:
     virtual ~Renderer() = default;
 
-    virtual bool initialize(SurfaceProvider* provider) = 0;
+    virtual bool initialize(SurfaceProviderPtr surfaceProvider) = 0;
     virtual void shutdown() = 0;
 
 	/// @brief Get the resource cache associated with this renderer. The resource cache manages techniques, materials, and geometries used for rendering. This method returns a pointer to the ResourceCache interface, allowing access to resource management functions.

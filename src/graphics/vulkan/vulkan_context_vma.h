@@ -11,16 +11,18 @@
 
 namespace ember::graphics::vulkan {
 
-    /**
-    * @brief Concrete implementation of VulkanContext using Vulkan Memory Allocator (VMA) for memory management.
-    */
+/**
+* @brief Concrete implementation of VulkanContext using Vulkan Memory Allocator (VMA) for memory management.
+*/
 class VulkanContextVma : public VulkanContext {
+
 public:
     VulkanContextVma();
     ~VulkanContextVma();
 
-    bool initialize(const std::vector<const char*>& extensions) override;
-    void shutdown() override;
+    VkInstance createInstance(const std::vector<const char*>& extensions) override;
+    VkPhysicalDevice createDevice(DeviceSelectorCallback selector = DeviceSelector::any) override;
+    void destroy() override;
 
     void waitIdle() override;
 
@@ -44,8 +46,8 @@ private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }
 
 private:
-    bool createInstance(std::vector<const char*> extensions);
-    bool selectPhysicalDevice();
+    bool createInstanceImpl(std::vector<const char*> extensions);
+    bool selectPhysicalDevice(DeviceSelectorCallback selector);
     bool createLogicalDevice();
 	bool createMemoryAllocator();
 
