@@ -10,6 +10,9 @@ target_sources(ember_graphics PRIVATE
     vulkan/vulkan_resource_cache.cpp
     vulkan/vulkan_renderer.cpp
     vulkan/vulkan_surface_provider_sdl3.cpp
+    vulkan/any_physical_device_selector.cpp
+    vulkan/ranked_physical_device_selector.cpp
+    vulkan/default_physical_device_selector.cpp
 )
 
 target_sources(ember_graphics PUBLIC
@@ -25,6 +28,9 @@ target_sources(ember_graphics PUBLIC
         vulkan/vulkan_renderer.h
         vulkan/vulkan_surface_provider.h
         vulkan/vulkan_surface_provider_sdl3.h
+        vulkan/any_physical_device_selector.h
+        vulkan/default_physical_device_selector.h
+        vulkan/ranked_physical_device_selector.h
 )
 
 target_include_directories(ember_graphics PUBLIC

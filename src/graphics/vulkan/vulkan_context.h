@@ -3,30 +3,16 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <set>
 #include <vector>
 
 #include <vulkan/vulkan.h>
 
+#include "any_physical_device_selector.h"
+#include "vulkan_defs.h"
+#include "physical_device_selector.h"
+
 namespace ember::graphics::vulkan {
-
-struct CandidateDevice {
-    const VkPhysicalDevice& device;
-    const VkPhysicalDeviceProperties& deviceProperties;
-    const std::vector<VkQueueFamilyProperties>& queueFamilies;
-};
-
-using DeviceSelectorCallback = std::function<int(const CandidateDevice&)>;
-
-inline DeviceSelectorCallback WithRequiredQueueFlags(VkQueueFlags flags) { return [flags](const CandidateDevice& c) { for (auto& q : c.queueFamilies) if ((q.queueFlags & flags) == flags) return 1; return 0; }; }
-inline DeviceSelectorCallback And(DeviceSelectorCallback a, DeviceSelectorCallback b) { return [a, b](const CandidateDevice& c) { return a(c) && b(c); }; }
-inline DeviceSelectorCallback Or(DeviceSelectorCallback a, DeviceSelectorCallback b) { return [a, b](const CandidateDevice& c) { return a(c) || b(c); }; }
-
-struct DeviceSelector {
-    inline static  DeviceSelectorCallback none = [](const CandidateDevice&) { return 0; };
-    inline static const DeviceSelectorCallback any = [](const CandidateDevice&) { return 1; };
-    inline static const DeviceSelectorCallback graphics = WithRequiredQueueFlags(VK_QUEUE_GRAPHICS_BIT);
-    inline static const DeviceSelectorCallback compute = WithRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT);
-};
 
 /**
  * @brief Structure representing an allocation handle for Vulkan resources. This structure contains information about the backend used for memory allocation and an opaque handle to the allocated memory.
@@ -42,8 +28,9 @@ class VulkanContext {
 public:
     virtual ~VulkanContext() = default;
 
-    virtual VkInstance createInstance(const std::vector<const char*>& extensions) = 0;
-    virtual VkPhysicalDevice createDevice(DeviceSelectorCallback selector = DeviceSelector::any) = 0;
+    virtual bool createDefaultInstance(VkInstance& instance, const ExtensionSet& requiredExtensions = {}) = 0;
+    virtual bool initialize(VkInstance instance, PhysicalDeviceSelectorPtr deviceSelector = nullptr) = 0;
+    virtual bool initialize(const ExtensionSet& requiredExtensions = {}, PhysicalDeviceSelectorPtr deviceSelector = nullptr) = 0;
     virtual void destroy() = 0;
 
     virtual VkInstance getInstance() const = 0;

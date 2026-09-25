@@ -2,12 +2,11 @@
 
 #include "vulkan_context.h"
 
+#include <map>
 #include <vector>
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
-
-#include "vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 
@@ -20,8 +19,11 @@ public:
     VulkanContextVma();
     ~VulkanContextVma();
 
-    VkInstance createInstance(const std::vector<const char*>& extensions) override;
-    VkPhysicalDevice createDevice(DeviceSelectorCallback selector = DeviceSelector::any) override;
+    bool createDefaultInstance(VkInstance& instance, const ExtensionSet& requiredExtensions = {}) override;
+    
+    bool initialize(VkInstance instance, PhysicalDeviceSelectorPtr deviceSelector = nullptr) override;
+    bool initialize(const ExtensionSet& requiredExtensions = {}, PhysicalDeviceSelectorPtr deviceSelector = nullptr) override;
+
     void destroy() override;
 
     void waitIdle() override;
@@ -46,8 +48,6 @@ private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }
 
 private:
-    bool createInstanceImpl(std::vector<const char*> extensions);
-    bool selectPhysicalDevice(DeviceSelectorCallback selector);
     bool createLogicalDevice();
 	bool createMemoryAllocator();
 

@@ -41,7 +41,7 @@ public:
     void resizeFramebuffer(uint32_t width, uint32_t height) override;
     
 private:
-    std::vector<const char*> getRequiredExtensions();
+    ExtensionSet getRequiredExtensions();
     VkSurfaceKHR getSurface() const { return surface_; }
 
     bool createSwapchain();

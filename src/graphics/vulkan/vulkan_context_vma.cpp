@@ -5,6 +5,10 @@
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vk_mem_alloc.h>
 
+#include <algorithm>
+
+#include "any_physical_device_selector.h"
+
 namespace ember::graphics::vulkan {
 
 VulkanContextVma::VulkanContextVma() {
@@ -16,73 +20,115 @@ VulkanContextVma::~VulkanContextVma() {
     }
 }
 
-VkInstance VulkanContextVma::createInstance(const std::vector<const char*>& extensions) {
-    if (initialized_) {
-        EMBER_LOG_WARN("VulkanContextVma already initialized");
-        return instance_;
+bool VulkanContextVma::createDefaultInstance(VkInstance& instance, const ExtensionSet& requiredExtensions) {
+    // Application info
+    VkApplicationInfo appInfo{};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = "Ember Engine";
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName = "Ember";
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_2;
+
+    // Instance create info
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &appInfo;
+
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+
+    std::vector<const char*> extensionNames;
+	std::ranges::transform(requiredExtensions, std::back_inserter(extensionNames), [](const std::string_view& ext) { return ext.data(); });
+    createInfo.ppEnabledExtensionNames = extensionNames.data();
+
+    // Validation layers
+    std::vector<const char*> validationLayers;
+#ifdef EMBER_DEBUG
+    validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
+#else
+    createInfo.enabledLayerCount = 0;
+#endif
+
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+    if (result != VK_SUCCESS) {
+        EMBER_LOG_ERROR("vkCreateInstance failed with code: {}", std::to_string(result));
+        return false;
     }
 
-    try {
-        // Create Vulkan instance
-        if (!createInstanceImpl(extensions)) {
-            EMBER_LOG_ERROR("Failed to create Vulkan instance");
-            return VK_NULL_HANDLE;
-        }
-
-        initialized_ = true;
-        EMBER_LOG_INFO("VulkanContextVma initialized successfully");
-        return instance_;
-
-    } catch (const std::exception& e) {
-        EMBER_LOG_ERROR("VulkanContextVma initialization exception: {}", e.what());
-        destroy();
-        return VK_NULL_HANDLE;
-    }
+    return true;
 }
 
-VkPhysicalDevice VulkanContextVma::createDevice(DeviceSelectorCallback selector) {
-    if (!initialized_) {
-        EMBER_LOG_WARN("VulkanContextVma not initialized");
-        return VK_NULL_HANDLE;
+bool VulkanContextVma::initialize(const ExtensionSet& extensions, PhysicalDeviceSelectorPtr deviceSelector) {
+    if (initialized_) {
+        EMBER_LOG_WARN("VulkanContextVma already initialized");
+        return false;
+	}
+
+    VkInstance instance;
+	if (!createDefaultInstance(instance, extensions)) {
+        EMBER_LOG_ERROR("Failed to create Vulkan instance");
+        return false;
+	}
+
+    return initialize(instance, std::move(deviceSelector));
+}
+
+bool VulkanContextVma::initialize(VkInstance instance, PhysicalDeviceSelectorPtr deviceSelector) {
+    if (initialized_) {
+        EMBER_LOG_WARN("VulkanContextVma already initialized");
+        return false;
     }
 
+	instance_ = instance;
+
+    if (!deviceSelector) deviceSelector = createAnyPhysicalDeviceSelector();
+	
     try {   
         // Select physical device
-        if (!selectPhysicalDevice(selector)) {
+		auto deviceSelection = deviceSelector->select(instance_);
+        if (!deviceSelection) {
             EMBER_LOG_ERROR("Failed to select physical device");
-            return VK_NULL_HANDLE;
+            return false;
         }
+
+        EMBER_LOG_INFO("Selected physical device: {}", deviceSelection->properties.deviceName);
+
+		physicalDevice_ = deviceSelection->physicalDevice;
+		graphicsQueueFamily_ = deviceSelection->queueFamily;
 
         // Create logical device
         if (!createLogicalDevice()) {
             EMBER_LOG_ERROR("Failed to create logical device");
-            return VK_NULL_HANDLE;
+            return false;
         }
 
         if (!createMemoryAllocator()) {
             EMBER_LOG_ERROR("Failed to create Vulkan memory allocator");
-            return VK_NULL_HANDLE;
+            return false;
         }
 
         // Create one time command pool
         VkResult result = createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &commandPool_);
         if (result != VK_SUCCESS) {
             EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
-            return VK_NULL_HANDLE;
+            return false;
         }
 
         // Get graphics queue
         vkGetDeviceQueue(device_, graphicsQueueFamily_, 0, &graphicsQueue_);
 
         initialized_ = true;
+
         EMBER_LOG_INFO("VulkanContextVma initialized successfully");
-        return physicalDevice_;
+        return true;
 
     }
     catch (const std::exception& e) {
         EMBER_LOG_ERROR("VulkanContextVma initialization exception: {}", e.what());
         destroy();
-        return VK_NULL_HANDLE;
+        return false;
     }
 }
 
@@ -232,44 +278,6 @@ VkResult VulkanContextVma::createImage(VkDeviceSize size, VkImageType type, VkIm
     return result;
 }
 
-bool VulkanContextVma::createInstanceImpl(std::vector<const char*> extensions) {
-    // Application info
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Ember Engine";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "Ember";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_2;
-
-    // Instance create info
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
-
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-
-    createInfo.ppEnabledExtensionNames = extensions.data();
-
-    // Validation layers
-    std::vector<const char*> validationLayers;
-#ifdef EMBER_DEBUG
-    validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    createInfo.ppEnabledLayerNames = validationLayers.data();
-#else
-    createInfo.enabledLayerCount = 0;
-#endif
-
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
-    if (result != VK_SUCCESS) {
-        EMBER_LOG_ERROR("vkCreateInstance failed with code: {}", std::to_string(result));
-        return false;
-    }
-
-    return true;
-}
-
 bool VulkanContextVma::createMemoryAllocator() {
     // fetching pointers to Vulkan functions dynamically
     // https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html
@@ -292,63 +300,6 @@ bool VulkanContextVma::createMemoryAllocator() {
     }
 
     return true;
-}
-
-bool VulkanContextVma::selectPhysicalDevice(DeviceSelectorCallback selector) {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
-
-    if (deviceCount == 0) {
-        EMBER_LOG_ERROR("No physical devices found");
-        return false;
-    }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
-
-    // Select first suitable device
-    EMBER_LOG_INFO("Enumerating devices");
-
-    int bestScore = -1;
-    VkPhysicalDeviceProperties bestDeviceProperties{};
-    for (const auto& device : devices) {
-        VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-        EMBER_LOG_INFO("Considering device: {}", deviceProperties.deviceName);
-
-        // Check for graphics queue support
-        uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-        
-        for (uint32_t i = 0; i < queueFamilyCount; i++) {
-            CandidateDevice candidate{
-                .device = device,
-                .deviceProperties = deviceProperties,
-                .queueFamilies = queueFamilies
-            };
-
-			int score = selector(candidate);
-            if (score > bestScore) {
-                bestScore = score;
-				bestDeviceProperties = deviceProperties;
-                physicalDevice_ = candidate.device;
-                graphicsQueueFamily_ = i;
-            }
-        }
-    }
-
-    if (bestScore >= 0) {
-        EMBER_LOG_INFO("Selected device: {}", bestDeviceProperties.deviceName);
-        return true;
-    }
-
-    EMBER_LOG_ERROR("No suitable physical device found");
-    return false;
 }
 
 bool VulkanContextVma::createLogicalDevice() {

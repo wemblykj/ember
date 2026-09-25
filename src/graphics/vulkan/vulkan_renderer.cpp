@@ -3,6 +3,7 @@
 #include <logger.h>
 #include <map>
 
+#include "default_physical_device_selector.h"
 #include "vulkan_context_vma.h"
 
 namespace ember::graphics::vulkan {
@@ -23,7 +24,7 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
     EMBER_LOG_INFO("Initializing Vulkan renderer...");
 
     // Get required extensions
-    std::vector<const char*> extensions = getRequiredExtensions();
+    auto requiredExtensions = getRequiredExtensions();
 
     // Create surface if window provided (for desktop rendering)
     if (surfaceProvider) {
@@ -35,43 +36,33 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
         }
 
         // add surface extensions to the list of required extensions
-        std::vector<const char*> surfaceExtensions = surfaceProvider_->getRequiredInstanceExtensions();
-        extensions.insert(extensions.end(), surfaceExtensions.begin(), surfaceExtensions.end());
-
-        // add swapchain extension to the list of required extensions
-        //extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        auto surfaceExtensions = surfaceProvider_->getRequiredInstanceExtensions();
+        requiredExtensions.insert(surfaceExtensions.begin(), surfaceExtensions.end());
     }
 
-	auto instance = context_->createInstance(extensions);
-	if (instance == VK_NULL_HANDLE) {
+    VkInstance instance;
+	if (!context_->createDefaultInstance(instance, requiredExtensions)) {
 		EMBER_LOG_ERROR("Failed to create Vulkan instance");
 		return false;
 	}
 
+    auto deviceSelector = createDefaultPhysicalDeviceSelector();
+
     if (surfaceProvider_) {
-		// create a surface for the window
-        if (!surfaceProvider_->createSurface(context_->getInstance(), surface_)) {
+        // create a surface for the window
+        if (!surfaceProvider_->createSurface(instance, surface_)) {
             EMBER_LOG_WARN("Surface is null, skipping presentation support check");
             return false;
         }
 
-		// create a device that supports presentation to the surface
-        context_->createDevice(
-            And(
-                DeviceSelector::graphics, 
-                [this](const CandidateDevice& candidate) {
-                    VkBool32 supported = VK_FALSE;
-                    for (uint32_t i = 0; i < candidate.queueFamilies.size(); ++i)
-                    {
-                        vkGetPhysicalDeviceSurfaceSupportKHR(candidate.device, i, surface_, &supported);
-                    }
-                    
-                    return supported == VK_TRUE ? 1 : 0;
-                }));
+        deviceSelector->requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+    		.supportsSurface(surface_);
+        
     } else {
-        context_->createDevice(DeviceSelector::graphics);
         EMBER_LOG_WARN("SurfaceProvider is null, skipping presentation");
     }
+
+    context_->initialize(instance, std::move(deviceSelector));
 
     createFrameResources();
 
@@ -222,21 +213,18 @@ void VulkanRenderer::resizeFramebuffer(uint32_t width, uint32_t height) {
 }
 
 
-std::vector<const char*> VulkanRenderer::getRequiredExtensions() {
-    std::vector<const char*> extensions;
-
-    // Core extensions
-    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+ExtensionSet VulkanRenderer::getRequiredExtensions() {
+    ExtensionSet extensions;
 
     // Platform-specific surface extension
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+    extensions.insert(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+    extensions.insert(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_XCBKHR)
-    extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+    extensions.insert(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
-    extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
+    extensions.insert(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
 #endif
 
     return extensions;
