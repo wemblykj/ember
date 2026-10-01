@@ -4,6 +4,7 @@
 #include <map>
 
 #include "default_physical_device_selector.h"
+#include "shaderc_vulkan_resource_compiler.h"
 #include "vulkan_context_vma.h"
 
 namespace ember::graphics::vulkan {
@@ -486,8 +487,10 @@ uint32_t VulkanRenderer::chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabi
 RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider) {
     auto context = std::make_shared<VulkanContextVma>();
 
+	auto resourceCompiler = std::make_unique<ShadercVulkanResourceCompiler>(context);
+
     ResourceCacheConfig resourceCacheConfig;
-    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context);
+    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceCompiler));
 
     auto renderer = std::make_unique<VulkanRenderer>(config, context, resourceCache);
     if (renderer->initialize(surfaceProvider)) {

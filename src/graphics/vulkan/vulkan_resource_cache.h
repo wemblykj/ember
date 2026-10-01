@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include <cstdint>
 #include <vector>
 
@@ -11,60 +9,18 @@
 
 #include "../resources.h" // ResourceGroupID, TechniqueID, MaterialID, GeometryID, Builtin*
 #include "vulkan_context.h"
+#include "vulkan_resource_compiler.h"
 
 namespace ember::graphics::vulkan {
-
-/**
-    * @brief Technique (pipeline) record.
-    *
-    * Stores compiled pipeline objects and shader modules required to bind a
-    * technique at draw time.
-    */
-struct TechniqueRecord {
-    VkPipeline pipeline = VK_NULL_HANDLE;                   ///< Graphics pipeline handle
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;       ///< Pipeline layout
-    VkShaderModule vertModule = VK_NULL_HANDLE;             ///< Vertex shader module (retained for hot-reload)
-    VkShaderModule fragModule = VK_NULL_HANDLE;             ///< Fragment shader module (retained for hot-reload)
-
-    VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;  ///< Sample count used when creating pipeline
-    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; ///< Primitive topology
-
-    std::uint64_t compatibleRenderPassKey = 0;              ///< Optional key for renderpass/subpass compatibility
-};
-
-/**
-    * @brief Material record.
-    *
-    * Materials reference a technique and contain descriptor set layout information
-    * and per-frame descriptor sets used for binding material parameters.
-    */
-struct MaterialRecord {
-    TechniqueID technique = BuiltinTechnique::Opaque;       ///< Technique this material uses
-    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE; ///< Descriptor set layout
-    std::vector<VkDescriptorSet> descriptorSetsPerFrame;    ///< Descriptor sets sized to frames-in-flight
-    std::uint32_t dynamicOffsetCount = 0;                   ///< Number of dynamic offsets required
-    std::size_t pushConstantSize = 0;                       ///< Size of push constant region (bytes)
-};
-
-/**
-    * @brief Geometry record.
-    *
-    * Holds vertex/index buffers and related metadata.
-    */
-struct GeometryRecord {
-    VkBuffer vertexBuffer = VK_NULL_HANDLE;                 ///< Device vertex buffer
-    VkBuffer indexBuffer = VK_NULL_HANDLE;                  ///< Device index buffer
-    std::uint32_t indexCount = 0;                           ///< Number of indices
-    VkIndexType indexType = VK_INDEX_TYPE_UINT32;           ///< Index type
-    std::uint32_t vertexStride = 0;                         ///< Vertex stride in bytes
-};
 
 /**
     * @brief Vulkan resource cache implementation
     */
 class VulkanResourceCache : public ResourceCache {
 public:
-    VulkanResourceCache(const ResourceCacheConfig& config, std::shared_ptr<VulkanContext> context);
+    VulkanResourceCache(const ResourceCacheConfig& config, 
+    	std::shared_ptr<VulkanContext> context,
+        std::unique_ptr<VulkanResourceCompiler> compiler);
     ~VulkanResourceCache() override;
 
     // VulkanResourceCache
@@ -87,8 +43,15 @@ public:
     MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group) override;
     GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group) override;
 
-    MaterialID setUnassignedMaterial(MaterialID id) override;
-    MaterialID setUnresolvedMaterial(MaterialID id) override;
+    TechniqueID setInvalidTechniqueId(TechniqueID id) override;
+    TechniqueID setUnassignedTechniqueId(TechniqueID id) override;
+    TechniqueID setUnresolvedTechniqueId(TechniqueID id) override;
+
+    MaterialID setInvalidMaterialId(MaterialID id) override;
+    MaterialID setUnassignedMaterialId(MaterialID id) override;
+    MaterialID setUnresolvedMaterialId(MaterialID id) override;
+
+    GeometryID setInvalidGeometryId(GeometryID id) override;
 
 private:
     MaterialID bindMaterial(MaterialID id);
@@ -121,17 +84,24 @@ private:
 
     struct GeometryEntry : ResourceCacheEntry {
         GeometryRecord record;
-        AllocationHandle vertexMemory;           ///< Memory backing vertex buffer
-        AllocationHandle indexMemory;            ///< Memory backing index buffer
+        GeometryAllocation allocation;           ///< Memory backing vertex and index buffers
         bool uploaded = false;                   ///< True if resident on device
     };
 
     ResourceCacheConfig config_;
 
     std::shared_ptr<VulkanContext> context_;
+    std::unique_ptr<VulkanResourceCompiler> compiler_;
 
-    MaterialID unassignedMaterial_ = BuiltinMaterial::Undefined;
-    MaterialID unresolvedMaterial_ = BuiltinMaterial::Undefined;
+	TechniqueID invalidTechniqueId_ = BuiltinTechnique::Undefined;
+    TechniqueID unassignedTechniqueId_ = BuiltinTechnique::Undefined;
+	TechniqueID unresolvedTechniqueId_ = BuiltinTechnique::Undefined;
+
+	MaterialID invalidMaterialId_ = BuiltinMaterial::Undefined;
+    MaterialID unassignedMaterialId_ = BuiltinMaterial::Undefined;
+    MaterialID unresolvedMaterialId_ = BuiltinMaterial::Undefined;
+
+	GeometryID invalidGeometryId_ = BuiltinGeometry::Undefined;
 
     ResourceGroupID nextGroupId_ = BuiltinResourceGroup::Custom;
     TechniqueID nextTechniqueId_ = BuiltinTechnique::Custom;

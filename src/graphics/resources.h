@@ -21,6 +21,7 @@ namespace BuiltinResourceGroup {
 
 /// @brief Built-in technique IDs for common rendering techniques.
 namespace BuiltinTechnique {
+    constexpr TechniqueID Invalid = -1;
     constexpr TechniqueID Undefined = 0;
     constexpr TechniqueID Opaque = 1;
     constexpr TechniqueID Transparent = 2;
@@ -30,6 +31,7 @@ namespace BuiltinTechnique {
 
 /// @brief Built-in material IDs for common rendering materials.
 namespace BuiltinMaterial {
+    constexpr MaterialID Invalid = -1;
     constexpr MaterialID Undefined = 0;
     /// @brief Base value for custom materials.
     constexpr MaterialID Custom = 0x8000;
@@ -37,6 +39,7 @@ namespace BuiltinMaterial {
 
 /// @brief Built-in geometry IDs for common rendering geometries.
 namespace BuiltinGeometry {
+    constexpr GeometryID Invalid = -1;
     constexpr GeometryID Undefined = 0;
     constexpr GeometryID UnitQuad = 1;
     constexpr GeometryID FullscreenQuad = 2;

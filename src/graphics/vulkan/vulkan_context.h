@@ -1,25 +1,15 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <set>
-#include <vector>
 
 #include <vulkan/vulkan.h>
 
-#include "any_physical_device_selector.h"
 #include "vulkan_defs.h"
 #include "physical_device_selector.h"
 
 namespace ember::graphics::vulkan {
-
-/**
- * @brief Structure representing an allocation handle for Vulkan resources. This structure contains information about the backend used for memory allocation and an opaque handle to the allocated memory.
- */
-struct AllocationHandle {
-    enum class Backend : uint8_t { None = 0, Vma, Vk } backend = Backend::None; uintptr_t handle = 0; // opaque storage for backend-specific handle
-};
 
 /**
 * @brief Abstract base class representing a Vulkan context. This class provides an interface for managing Vulkan resources such as instances, devices, command pools, and buffers.
