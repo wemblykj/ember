@@ -5,6 +5,7 @@
 #include "../resources.h" // ResourceGroupID, TechniqueID, MaterialID, GeometryID, Builtin*
 
 #include "vulkan_defs.h"
+#include <vector>
 
 namespace ember::graphics::vulkan {
 

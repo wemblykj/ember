@@ -1,3 +1,6 @@
+option(EMBER_BUILD_SDL3 "Build with SDL3 support" ON)
+option(EMBER_BUILD_SDL2 "Build with SDL2 support" OFF)
+
 if (EMBER_BUILD_SDL3)
     add_library(ember_platform STATIC
         sdl3/sdl3_window.cpp)

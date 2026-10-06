@@ -1,8 +1,12 @@
 #pragma once
 
+#include <memory>
+
+#include <shaderc/shaderc.hpp>
+
+#include "resource_file_provider.h"
 #include "vulkan_resource_compiler.h"
 #include "vulkan_context.h"
-#include <memory>
 
 namespace ember::graphics::vulkan {
 
@@ -12,18 +16,25 @@ namespace ember::graphics::vulkan {
  */
 class ShadercVulkanResourceCompiler : public VulkanResourceCompiler {
 public:
-    explicit ShadercVulkanResourceCompiler(std::shared_ptr<VulkanContext> context);
+    explicit ShadercVulkanResourceCompiler(
+    	shaderc::CompileOptions& options, 
+    	std::shared_ptr<VulkanContext> context,
+        std::shared_ptr<core::ResourceFileProvider> fileProvider);
 
-    bool compileTechnique(const TechniqueDesc& desc, TechniqueRecord& outRecord) override;
-    bool compileMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& outRecord) override;
-    bool compileGeometry(const GeometryDesc& desc, GeometryRecord& outRecord, GeometryAllocation& outAllocation) override;
+    bool compileTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) override;
+    bool compileMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& material) override;
+    bool compileGeometry(const GeometryDesc& desc, GeometryRecord& geometry, GeometryAllocation& allocation) override;
 
-    void destroyTechnique(TechniqueRecord& record) override;
-    void destroyMaterial(MaterialRecord& record) override;
-    void destroyGeometry(GeometryRecord& record, GeometryAllocation& allocation) override;
+    void destroyTechnique(TechniqueRecord& technique) override;
+    void destroyMaterial(MaterialRecord& material) override;
+    void destroyGeometry(GeometryRecord& geometry, GeometryAllocation& allocation) override;
 
 private:
     std::shared_ptr<VulkanContext> context_;
+	std::unique_ptr<shaderc::Compiler> compiler_;
+	shaderc::CompileOptions options_;
+    std::shared_ptr<core::ResourceFileProvider> fileProvider_;
+
     // shaderc::Compiler instance, options, etc. kept private to this implementation
 };
 

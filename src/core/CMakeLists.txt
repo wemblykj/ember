@@ -1,5 +1,6 @@
 add_library(ember_core STATIC
-    logger.cpp
+    logger.cpp 
+    native_file_provider.cpp
 )
 
 target_sources(ember_core PUBLIC
@@ -9,6 +10,7 @@ target_sources(ember_core PUBLIC
         ember_core.h
         logger.h
         graphics_api.h
+        resource_file_provider.h
 )
 
 target_include_directories(ember_core PUBLIC

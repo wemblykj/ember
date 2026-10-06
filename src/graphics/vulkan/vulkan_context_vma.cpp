@@ -110,7 +110,7 @@ bool VulkanContextVma::initialize(VkInstance instance, PhysicalDeviceSelectorPtr
         }
 
         // Create one time command pool
-        VkResult result = createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &commandPool_);
+        VkResult result = createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandPool_);
         if (result != VK_SUCCESS) {
             EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
             return false;
@@ -168,14 +168,14 @@ void VulkanContextVma::waitIdle() {
 }
 
 VkResult VulkanContextVma::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags,
-                                             VkCommandPool* outPool) {
+                                             VkCommandPool& pool) {
     VkCommandPoolCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
     	.flags = flags,
 		.queueFamilyIndex = queueFamilyIndex
     };
 
-	return vkCreateCommandPool(device_, &info, nullptr, outPool);
+	return vkCreateCommandPool(device_, &info, nullptr, &pool);
 }
 
 void VulkanContextVma::destroyCommandPool(VkCommandPool pool) {
@@ -231,7 +231,7 @@ void VulkanContextVma::endOneTimeCommands(VkCommandBuffer cmd) {
 	vkFreeCommandBuffers(device_, commandPool_, 1, &cmd);
 }
 
-VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory) {
+bool VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, AllocationHandle& allocation) {
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.flags = 0,
@@ -243,20 +243,23 @@ VkResult VulkanContextVma::createBuffer(VkDeviceSize size, VkBufferUsageFlags us
         .usage = VMA_MEMORY_USAGE_AUTO
     };
     
-    VmaAllocation allocation;
-    VkResult result = vmaCreateBuffer(allocator_, &bufferInfo, &allocInfo, outBuffer, &allocation, nullptr);
-    if (result == VK_SUCCESS) {
-        *outMemory = toAllocationHandle(allocation);
+    VmaAllocation vmaAllocation;
+    VkResult result = vmaCreateBuffer(allocator_, &bufferInfo, &allocInfo, &buffer, &vmaAllocation, nullptr);
+    if (result != VK_SUCCESS) {
+        EMBER_LOG_ERROR("vmaCreateBuffer failed with code: {}", std::to_string(result));
+        return false;
     }
 
-    return result;
+    allocation = toAllocationHandle(vmaAllocation);
+
+    return true;
 }
 
-void VulkanContextVma::destroyBuffer(VkBuffer buffer, AllocationHandle memory) {
-    vmaDestroyBuffer(allocator_, buffer, toVma(memory));
+void VulkanContextVma::destroyBuffer(VkBuffer buffer, AllocationHandle allocation) {
+    vmaDestroyBuffer(allocator_, buffer, toVma(allocation));
 }
 
-VkResult VulkanContextVma::createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory)
+bool VulkanContextVma::createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage& image, AllocationHandle& allocation)
 {
     VkImageCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -269,13 +272,30 @@ VkResult VulkanContextVma::createImage(VkDeviceSize size, VkImageType type, VkIm
         .usage = VMA_MEMORY_USAGE_AUTO
     };
 
-    VmaAllocation allocation;
-    VkResult result = vmaCreateImage(allocator_, &bufferInfo, &allocInfo, outImage, &allocation, nullptr);
+    VmaAllocation vmaAllocation;
+    VkResult result = vmaCreateImage(allocator_, &bufferInfo, &allocInfo, &image, &vmaAllocation, nullptr);
     if (result == VK_SUCCESS) {
-        *outMemory = toAllocationHandle(allocation);
+        allocation = toAllocationHandle(vmaAllocation);
+        return true;
     }
 
-    return result;
+    return false;
+}
+
+bool VulkanContextVma::createShaderModule(std::span<const uint32_t> spirvWords, VkShaderModule& shaderModule)
+{
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = spirvWords.size() * sizeof(uint32_t); // Size in bytes
+    createInfo.pCode = spirvWords.data();                       // Pointer to SPIR-V array
+
+    VkResult result = vkCreateShaderModule(device_, &createInfo, nullptr, &shaderModule);
+    if (result != VK_SUCCESS) {
+        EMBER_LOG_ERROR("vkCreateShaderModule failed with code: {}", std::to_string(result));
+        return false;
+    }
+
+    return true;
 }
 
 bool VulkanContextVma::createMemoryAllocator() {

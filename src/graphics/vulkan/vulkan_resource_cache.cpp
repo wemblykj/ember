@@ -66,6 +66,15 @@ GeometryRecord VulkanResourceCache::ResolveGeometry(GeometryID id)
 }   
 
 void VulkanResourceCache::clearAllResources() {
+    for (auto& [id, entry] : materials_) { compiler_->destroyMaterial(entry.record); }
+    for (auto& [id, entry] : techniques_) { compiler_->destroyTechnique(entry.record); }
+    for (auto& [id, entry] : geometry_) {
+        compiler_->destroyGeometry(entry.record, entry.allocation);
+    }
+
+    materials_.clear();
+    techniques_.clear();
+    geometry_.clear();
     groupMembers_.clear();
     groupNames_.clear();
     nextGroupId_ = BuiltinResourceGroup::Custom;

@@ -4,6 +4,7 @@
 #include <map>
 
 #include "default_physical_device_selector.h"
+#include "native_file_provider.h"
 #include "shaderc_vulkan_resource_compiler.h"
 #include "vulkan_context_vma.h"
 
@@ -392,7 +393,7 @@ bool VulkanRenderer::createFrameResources()
     for (uint32_t i = 0; i < framesInFlight_; ++i) {
         FrameContext& frame = frames_[i];
         // Create a resettable per-frame command pool via VulkanContext helper
-        context_->createCommandPool(queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, &frame.commandPool);
+        context_->createCommandPool(queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, frame.commandPool);
 
         // Allocate a primary command buffer from that pool
         context_->allocateCommandBuffers(frame.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &frame.commandBuffer);
@@ -487,7 +488,10 @@ uint32_t VulkanRenderer::chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabi
 RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider) {
     auto context = std::make_shared<VulkanContextVma>();
 
-	auto resourceCompiler = std::make_unique<ShadercVulkanResourceCompiler>(context);
+	auto fileProvider = std::make_shared<ember::core::NativeFileProvider>();
+
+    shaderc::CompileOptions compilerOptions;
+    auto resourceCompiler = std::make_unique<ShadercVulkanResourceCompiler>(compilerOptions, context, fileProvider);
 
     ResourceCacheConfig resourceCacheConfig;
     auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceCompiler));

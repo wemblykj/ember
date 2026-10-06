@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 #include <set>
+#include <span>
+#include <shaderc/shaderc.hpp>
 
 #include <vulkan/vulkan.h>
 
@@ -39,10 +41,10 @@ public:
     * @brief Creates a command pool for the specified queue family index and flags. The created command pool is returned in outPool.
     * @param queueFamilyIndex The index of the queue family for which to create the command pool.
     * @param flags Command pool creation flags.
-    * @param outPool Pointer to the variable that will receive the created command pool.
+    * @param pool Pointer to the variable that will receive the created command pool.
     * @return VkResult indicating success or failure.
     */
-    virtual VkResult createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, VkCommandPool* outPool) = 0;
+    virtual VkResult createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, VkCommandPool& pool) = 0;
 
     /**
     * @brief Destroys the specified command pool.
@@ -84,20 +86,21 @@ public:
     * @brief Creates a buffer with the specified size and usage flags.
     * @param size The size of the buffer in bytes.
     * @param usage The usage flags for the buffer.
-    * @param outBuffer Pointer to the variable that will receive the created buffer.
-    * @param outMemory Pointer to the variable that will receive the allocated memory for the buffer.
+    * @param buffer Pointer to the variable that will receive the created buffer.
+    * @param allocation Pointer to the variable that will receive the allocated memory for the buffer.
     * @return VkResult indicating success or failure.
     */
-    virtual VkResult createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory) = 0;
+    virtual bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, AllocationHandle& allocation) = 0;
 
     /**
     * @brief Destroys the specified buffer and frees its associated memory.
     * @param buffer The buffer to destroy.
-    * @param memory The memory to free.
+    * @param allocation The memory to free.
     */
-    virtual void destroyBuffer(VkBuffer buffer, AllocationHandle memory) = 0;
+    virtual void destroyBuffer(VkBuffer buffer, AllocationHandle allocation) = 0;
 
-    virtual VkResult createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory) = 0;
+    virtual bool createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage& image, AllocationHandle& allocation) = 0;
+    virtual bool createShaderModule(std::span<const uint32_t> spirvWords, VkShaderModule& shaderModule) = 0;
 };
 
 using VulkanContextPtr = std::shared_ptr<VulkanContext>;

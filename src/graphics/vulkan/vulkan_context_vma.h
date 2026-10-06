@@ -34,15 +34,16 @@ public:
     VkQueue getGraphicsQueue() const override { return graphicsQueue_; }
     uint32_t getGraphicsQueueFamily() const override { return graphicsQueueFamily_; }
 
-    VkResult createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, VkCommandPool* outPool) override ;
+    VkResult createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, VkCommandPool& pool) override ;
     void destroyCommandPool(VkCommandPool pool) override;
     VkResult allocateCommandBuffers(VkCommandPool pool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer* outBuffers) override;
     void freeCommandBuffers(VkCommandPool pool, uint32_t count, const VkCommandBuffer* buffers) override;
     VkCommandBuffer beginOneTimeCommands() override;
     void endOneTimeCommands(VkCommandBuffer cmd) override;
-    VkResult createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer* outBuffer, AllocationHandle* outMemory) override;
-    void destroyBuffer(VkBuffer buffer, AllocationHandle memory) override;
-    VkResult createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage* outImage, AllocationHandle* outMemory) override;
+    bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, AllocationHandle& allocation) override;
+    void destroyBuffer(VkBuffer buffer, AllocationHandle allocation) override;
+    bool createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage& image, AllocationHandle& allocation) override;
+    bool createShaderModule(std::span<const uint32_t> spirvWords, VkShaderModule& shaderModule) override;
 
 private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }

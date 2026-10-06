@@ -1,7 +1,32 @@
 add_library(ember_graphics STATIC)
 
+option(EMBER_BUILD_SHADERC_UNOFFICIAL "Build with unofficial shaderc support" ON)
+
+
 # Vulkan
-find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
+if (NOT EMBER_BUILD_SHADERC_UNOFFICIAL)
+
+    find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
+
+    target_link_libraries(ember_graphics PRIVATE
+        Vulkan::shaderc_combined
+    )
+
+else()
+
+    find_package(Vulkan REQUIRED COMPONENTS)
+    find_package(glslang CONFIG REQUIRED)
+    find_package(SPIRV-Tools CONFIG REQUIRED)
+    find_package(unofficial-shaderc CONFIG REQUIRED)
+
+    target_link_libraries(ember_graphics PRIVATE
+        glslang::glslang glslang::glslang-default-resource-limits glslang::SPIRV
+        SPIRV-Tools-static
+        unofficial::shaderc::shaderc
+    )
+
+endif()
+
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Graphics sources
@@ -43,11 +68,6 @@ target_include_directories(ember_graphics PUBLIC
 target_link_libraries(ember_graphics PRIVATE
     Vulkan::Vulkan
     GPUOpen::VulkanMemoryAllocator
-    Vulkan::shaderc_combined
-)
-
-target_link_libraries(ember_graphics PUBLIC
-    Vulkan::Headers
 )
 
 target_link_libraries(ember_graphics PUBLIC
