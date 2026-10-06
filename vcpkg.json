@@ -9,6 +9,9 @@
       ]
     },
     "vulkan-memory-allocator",
-    "glm"
+    "glm",
+    "glslang",
+    "spirv-tools",
+    "shaderc"
   ]
 }

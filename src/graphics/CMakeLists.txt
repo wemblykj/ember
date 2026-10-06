@@ -1,7 +1,32 @@
 add_library(ember_graphics STATIC)
 
+option(EMBER_BUILD_SHADERC_UNOFFICIAL "Build with unofficial shaderc support" ON)
+
+
 # Vulkan
-find_package(Vulkan REQUIRED)
+if (NOT EMBER_BUILD_SHADERC_UNOFFICIAL)
+
+    find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
+
+    target_link_libraries(ember_graphics PRIVATE
+        Vulkan::shaderc_combined
+    )
+
+else()
+
+    find_package(Vulkan REQUIRED COMPONENTS)
+    find_package(glslang CONFIG REQUIRED)
+    find_package(SPIRV-Tools CONFIG REQUIRED)
+    find_package(unofficial-shaderc CONFIG REQUIRED)
+
+    target_link_libraries(ember_graphics PRIVATE
+        glslang::glslang glslang::glslang-default-resource-limits glslang::SPIRV
+        SPIRV-Tools-static
+        unofficial::shaderc::shaderc
+    )
+
+endif()
+
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Graphics sources
@@ -15,6 +40,7 @@ target_sources(ember_graphics PRIVATE
     vulkan/any_physical_device_selector.cpp
     vulkan/ranked_physical_device_selector.cpp
     vulkan/default_physical_device_selector.cpp
+    vulkan/shaderc_vulkan_resource_compiler.cpp
 )
 
 target_sources(ember_graphics PUBLIC
@@ -31,6 +57,7 @@ target_sources(ember_graphics PUBLIC
         vulkan/vulkan_context.h
         vulkan/vulkan_renderer.h
         vulkan/vulkan_surface_provider.h
+        vulkan/vulkan_resource_compiler.h
         vulkan/vulkan_surface_provider_sdl3.h
         vulkan/any_physical_device_selector.h
         vulkan/default_physical_device_selector.h
@@ -45,10 +72,6 @@ target_include_directories(ember_graphics PUBLIC
 target_link_libraries(ember_graphics PRIVATE
     Vulkan::Vulkan
     GPUOpen::VulkanMemoryAllocator
-)
-
-target_link_libraries(ember_graphics PUBLIC
-    Vulkan::Headers
 )
 
 target_link_libraries(ember_graphics PUBLIC

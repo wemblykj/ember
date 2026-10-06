@@ -32,12 +32,24 @@ public:
     /// @brief Register new geometry data (vertex/index buffers) with the specified description. Returns a unique GeometryID that can be used in render packets.
     virtual GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Default) = 0;
 
+	/// @brief Set the technique to be used when a render packet specifies an invalid technique. This is useful for handling cases where a technique reference is invalid or missing, allowing the renderer to fall back to a default technique instead of failing.
+    virtual TechniqueID setInvalidTechniqueId(TechniqueID id) = 0;
+	/// @brief Set the default technique to be used when a render packet does not specify a technique. This is useful for ensuring that all geometry is rendered with a valid technique, even if the user forgets to assign one.
+    virtual TechniqueID setUnassignedTechniqueId(TechniqueID id) = 0;
+	/// @brief Set the technique to be used when a render packet specifies an unresolved technique. This is useful for handling cases where a technique reference is invalid or missing, allowing the renderer to fall back to a default technique instead of failing.
+    virtual TechniqueID setUnresolvedTechniqueId(TechniqueID id) = 0;
+
+	/// @brief Set the material to be used when a render packet specifies an invalid material. This is useful for handling cases where a material reference is invalid or missing, allowing the renderer to fall back to a default material instead of failing.
+    virtual MaterialID setInvalidMaterialId(MaterialID id) = 0;
     /// @brief Set the default material to be used when a render packet does not specify a material. This is useful for ensuring that all geometry is rendered with a valid material, even if the user forgets to assign one.
     /// @return The previous default material ID, which can be restored later if needed.
-    virtual MaterialID setUnassignedMaterial(MaterialID id) = 0;
+    virtual MaterialID setUnassignedMaterialId(MaterialID id) = 0;
     /// @brief Set the material to be used when a render packet specifies an unresolved material. This is useful for handling cases where a material reference is invalid or missing, allowing the renderer to fall back to a default material instead of failing.
     /// @return The previous default material ID, which can be restored later if needed.
-    virtual MaterialID setUnresolvedMaterial(MaterialID id) = 0;
+    virtual MaterialID setUnresolvedMaterialId(MaterialID id) = 0;
+
+	/// @brief Set the geometry to be used when a render packet specifies an invalid geometry. This is useful for handling cases where a geometry reference is invalid or missing, allowing the renderer to fall back to a default geometry instead of failing.
+    virtual GeometryID setInvalidGeometryId(GeometryID id) = 0;
 };
 
 /**
