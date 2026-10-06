@@ -8,6 +8,9 @@
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
+#include "vulkan_instance.h"
+#include "vulkan_defs.h"
+
 namespace ember::graphics::vulkan {
 
 /**
@@ -16,20 +19,19 @@ namespace ember::graphics::vulkan {
 class VulkanContextVma : public VulkanContext {
 
 public:
-    VulkanContextVma();
+    VulkanContextVma(const VulkanInstancePtr& instance);
     ~VulkanContextVma();
 
-    bool createDefaultInstance(VkInstance& instance, const ExtensionSet& requiredExtensions = {}) override;
-    
-    bool initialize(VkInstance instance, PhysicalDeviceSelectorPtr deviceSelector = nullptr) override;
-    bool initialize(const ExtensionSet& requiredExtensions = {}, PhysicalDeviceSelectorPtr deviceSelector = nullptr) override;
+    bool initialize(const PhysicalDevicePtr& physicalDevice) override;
 
     void destroy() override;
 
     void waitIdle() override;
 
-    VkInstance getInstance() const override { return instance_; }
-    VkPhysicalDevice getPhysicalDevice() const override { return physicalDevice_; }
+    VulkanInstancePtr getInstance() const override { return instance_; }
+    PhysicalDevicePtr getPhysicalDevice() const override { return physicalDevice_; }
+
+    VkInstance getNativeInstance() const override { return instance_->get(); }
     VkDevice getDevice() const override { return device_; }
     VkQueue getGraphicsQueue() const override { return graphicsQueue_; }
     uint32_t getGraphicsQueueFamily() const override { return graphicsQueueFamily_; }
@@ -48,7 +50,7 @@ private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }
 
 private:
-    bool createLogicalDevice();
+    bool createLogicalDevice(const PhysicalDevicePtr& physicalDevice);
 	bool createMemoryAllocator();
 
     static VmaAllocation toVma(AllocationHandle handle) {
@@ -61,8 +63,9 @@ private:
     }
 
     bool initialized_ = false;
-    VkInstance instance_ = VK_NULL_HANDLE;
-    VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
+    VulkanInstancePtr instance_ = VK_NULL_HANDLE;
+    PhysicalDevicePtr physicalDevice_;
+
     VkDevice device_ = VK_NULL_HANDLE;
     VkQueue graphicsQueue_ = VK_NULL_HANDLE;
     uint32_t graphicsQueueFamily_ = 0;

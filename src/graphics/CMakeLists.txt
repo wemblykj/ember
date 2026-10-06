@@ -6,6 +6,8 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Graphics sources
 target_sources(ember_graphics PRIVATE
+    vulkan/vulkan_instance.cpp
+    vulkan/scoped_vulkan_instance.cpp
     vulkan/vulkan_context_vma.cpp
     vulkan/vulkan_resource_cache.cpp
     vulkan/vulkan_renderer.cpp
@@ -24,6 +26,8 @@ target_sources(ember_graphics PUBLIC
         render_packet.h
         renderer.h
         surface_provider.h
+        vulkan/vulkan_instance.h
+        vulkan/scoped_vulkan_instance.h
         vulkan/vulkan_context.h
         vulkan/vulkan_renderer.h
         vulkan/vulkan_surface_provider.h

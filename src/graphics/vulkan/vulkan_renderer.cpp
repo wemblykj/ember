@@ -1,7 +1,9 @@
 #include "vulkan_renderer.h"
 
-#include <logger.h>
+#include <algorithm>
 #include <map>
+
+#include <logger.h>
 
 #include "default_physical_device_selector.h"
 #include "vulkan_context_vma.h"
@@ -23,8 +25,7 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
 
     EMBER_LOG_INFO("Initializing Vulkan renderer...");
 
-    // Get required extensions
-    auto requiredExtensions = getRequiredExtensions();
+    ExtensionSet requiredExtensions;
 
     // Create surface if window provided (for desktop rendering)
     if (surfaceProvider) {
@@ -40,14 +41,12 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
         requiredExtensions.insert(surfaceExtensions.begin(), surfaceExtensions.end());
     }
 
-    VkInstance instance;
-	if (!context_->createDefaultInstance(instance, requiredExtensions)) {
-		EMBER_LOG_ERROR("Failed to create Vulkan instance");
-		return false;
-	}
-
+    auto instance = createVulkanInstance(requiredExtensions);
     auto deviceSelector = createDefaultPhysicalDeviceSelector();
 
+    deviceSelector->allowDeviceTypes({ VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU, VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU });
+    deviceSelector->preferDeviceType(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
+		
     if (surfaceProvider_) {
         // create a surface for the window
         if (!surfaceProvider_->createSurface(instance, surface_)) {
@@ -55,14 +54,23 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
             return false;
         }
 
-        deviceSelector->requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
-    		.supportsSurface(surface_);
-        
+        deviceSelector->requireExtensions({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+        deviceSelector->requireSurfaceSupport(surface_);
+
+        deviceSelector->requireExtensions(
+            surfaceProvider_->getRequiredDeviceExtensions());  
     } else {
         EMBER_LOG_WARN("SurfaceProvider is null, skipping presentation");
     }
 
-    context_->initialize(instance, std::move(deviceSelector));
+    PhysicalDevices candidates;
+    auto physicalDevice = deviceSelector->select(candidates);
+    if (physicalDevice == std::nullopt) {
+        EMBER_LOG_WARN("Failed to find a compatible device");
+        return false;
+    }
+
+    context_->initialize(physicalDevice.value());
 
     createFrameResources();
 
@@ -86,11 +94,13 @@ void VulkanRenderer::shutdown() {
         destroySwapchain();
 	}
 
-    if (surface_ != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(context_->getInstance(), surface_, nullptr);
-        surface_ = VK_NULL_HANDLE;
-    }
-
+    if (surfaceProvider_) {
+        if (surface_ != VK_NULL_HANDLE) {
+            surfaceProvider_->destroySurface(context_->getInstance(), surface_);
+            surface_ = VK_NULL_HANDLE;
+        }
+	}
+    
     if (context_) {
         context_->destroy();
         context_.reset();
@@ -212,26 +222,8 @@ void VulkanRenderer::resizeFramebuffer(uint32_t width, uint32_t height) {
     config_.height = height;
 }
 
-
-ExtensionSet VulkanRenderer::getRequiredExtensions() {
-    ExtensionSet extensions;
-
-    // Platform-specific surface extension
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    extensions.insert(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    extensions.insert(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XCBKHR)
-    extensions.insert(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    extensions.insert(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-#endif
-
-    return extensions;
-}
-
 bool VulkanRenderer::createSwapchain() {
-    VkPhysicalDevice physicalDevice = context_->getPhysicalDevice();
+    VkPhysicalDevice physicalDevice = context_->getPhysicalDevice()->handle;
 
 	VkSurfaceCapabilitiesKHR capabilities{};
 	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface_, &capabilities) != VK_SUCCESS) {
@@ -464,7 +456,7 @@ VkPresentModeKHR VulkanRenderer::choosePresentMode(std::vector<VkPresentModeKHR>
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VulkanRenderer::chooseSurfaceExtent(VkSurfaceCapabilitiesKHR capabilities)
+VkExtent2D VulkanRenderer::chooseSurfaceExtent(VkSurfaceCapabilitiesKHR capabilities) const
 {
     VkExtent2D extent;
     if (capabilities.currentExtent.width != UINT32_MAX) {
@@ -484,7 +476,8 @@ uint32_t VulkanRenderer::chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabi
 }
 
 RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider) {
-    auto context = std::make_shared<VulkanContextVma>();
+    auto instance = createVulkanInstance();
+    auto context = std::make_shared<VulkanContextVma>(instance);
 
     ResourceCacheConfig resourceCacheConfig;
     auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context);
@@ -493,6 +486,7 @@ RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surf
     if (renderer->initialize(surfaceProvider)) {
         return renderer;
     }
+
     return nullptr;
 }
 

@@ -41,7 +41,6 @@ public:
     void resizeFramebuffer(uint32_t width, uint32_t height) override;
     
 private:
-    ExtensionSet getRequiredExtensions();
     VkSurfaceKHR getSurface() const { return surface_; }
 
     bool createSwapchain();
@@ -50,12 +49,12 @@ private:
     bool createFrameResources();
     void destroyFrameResources();
 
-    VkSurfaceFormatKHR chooseSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats, 
+    static VkSurfaceFormatKHR chooseSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats,
     	VkFormat preferredFormat = VK_FORMAT_UNDEFINED, VkColorSpaceKHR preferredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
-    VkPresentModeKHR choosePresentMode(std::vector<VkPresentModeKHR> presentModes, 
+    static VkPresentModeKHR choosePresentMode(std::vector<VkPresentModeKHR> presentModes,
     	VkPresentModeKHR preferredMode = VK_PRESENT_MODE_FIFO_KHR);
-    VkExtent2D chooseSurfaceExtent(VkSurfaceCapabilitiesKHR capabilities);
-    uint32_t chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabilities, uint32_t preferredCount = 2);
+    VkExtent2D chooseSurfaceExtent(VkSurfaceCapabilitiesKHR capabilities) const;
+    static uint32_t chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabilities, uint32_t preferredCount = 2);
 
 private:
 

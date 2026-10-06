@@ -5,24 +5,21 @@
 namespace ember::graphics::vulkan {
 
 class RankedPhysicalDeviceSelector : public PhysicalDeviceSelector {
-
 public:
-	std::optional<DeviceSelectionResult> select(VkInstance instance) override;
+	struct RankedCandidate {
+		int score;
+		PhysicalDevicePtr device;
+	};
 
-	/**
-	 * Enumerate candidate physical devices for the given instance.
-	 * @param instance Vulkan instance (already created by context).
-	 * @return A vector of candidate device selection results.
-	 */
-	std::vector<DeviceSelectionResult> candidates(VkInstance instance);
+	using RankedCandidates = std::vector<RankedCandidate>;
+
+	std::optional<PhysicalDevicePtr> select(const PhysicalDevices& candidates) override;
+
+	/// @brief Shortlist the candidates based on their scores. This function evaluates each candidate and returns a list of candidates that meet the minimum score requirement.
+	RankedCandidates enumerateEligibleDevices(const PhysicalDevices& candidates);
 
 protected:
-	using RankedCandidate = std::tuple<int, DeviceSelectionResult>; // score, result
-
-	virtual int evaluateCandidate(const DeviceSelectionResult& candidate) = 0;
-
-private:
-	std::vector<RankedCandidate> rankedCandidates(VkInstance instance);
+	virtual int evaluateCandidate(const PhysicalDevicePtr& candidate, PhysicalDeviceTraits& effectiveTraits) = 0;
 };
 
 } // namespace ember::graphics::vulkan

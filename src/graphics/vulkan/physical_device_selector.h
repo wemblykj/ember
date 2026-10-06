@@ -2,23 +2,12 @@
 
 #include <vulkan/vulkan.h>
 
-#include <cstdint>
 #include <optional>
+#include <memory>
 
 #include "vulkan_defs.h"
 
 namespace ember::graphics::vulkan {
-
-/**
- * @brief Result of a physical device selection.
- */
-struct DeviceSelectionResult {
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkPhysicalDeviceProperties properties{};
-    VkPhysicalDeviceFeatures features{};
-    ExtensionSet extensions;
-    uint32_t queueFamily = 0;
-};
 
 /**
  * @brief Selects a physical device from the available devices.
@@ -31,11 +20,11 @@ public:
     virtual ~PhysicalDeviceSelector() = default;
 
     /**
-     * Select a physical device for the given instance.
-     * @param instance Vulkan instance (already created by context).
-     * @return std::optional containing the selection result on success, or std::nullopt on failure.
+     * Select a physical device from the given candidates.
+     * @param candidates A list of candidate device descriptors.
+     * @return The selected device, or nulopt if no suitable device can be found.
      */
-    virtual std::optional<DeviceSelectionResult> select(VkInstance instance) = 0;
+    virtual std::optional<PhysicalDevicePtr> select(const PhysicalDevices& candidates) = 0;
 };
 
 using PhysicalDeviceSelectorPtr = std::unique_ptr<PhysicalDeviceSelector>;

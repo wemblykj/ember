@@ -4,72 +4,66 @@
 
 namespace ember::graphics::vulkan {
 
-std::optional<DeviceSelectionResult> RankedPhysicalDeviceSelector::select(VkInstance instance)
+std::optional<PhysicalDevicePtr> RankedPhysicalDeviceSelector::select(const PhysicalDevices& candidates)
 {
-	auto candidates = this->candidates(instance);
-	if (candidates.empty()) {
+	auto selectionCandidates = this->enumerateEligibleDevices(candidates);
+	if (selectionCandidates.empty()) {
 		return std::nullopt;
 	}
-	
+
 	// Return the best candidate
-	return candidates.front();
+	return selectionCandidates.front().device;
 }
 
-std::vector<DeviceSelectionResult> RankedPhysicalDeviceSelector::candidates(
-	VkInstance instance)
+RankedPhysicalDeviceSelector::RankedCandidates RankedPhysicalDeviceSelector::enumerateEligibleDevices(const PhysicalDevices& candidates)
 {
-	auto ranked = rankedCandidates(instance);
-	std::vector<DeviceSelectionResult> results;
-	for (const auto& [score, result] : ranked) {
-		results.push_back(result);
-	}
+	RankedCandidates selectionCandidates;
 
-	return results;
-}
+	for (const auto& candidate : candidates) {
+		RankedCandidate rankedCandidate{
+			.device = std::make_shared<PhysicalDevice>()
+		};
 
-std::vector<RankedPhysicalDeviceSelector::RankedCandidate> RankedPhysicalDeviceSelector::rankedCandidates(VkInstance instance)
-{
-	std::vector<RankedCandidate> candidates;
+		// evaluate the candidate and assign a score
+		rankedCandidate.score = evaluateCandidate(candidate, rankedCandidate.device->traits);
 
-	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-	if (deviceCount == 0) {
-		return candidates; // No devices found
-	}
-	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-	for (const auto& device : devices) {
-		DeviceSelectionResult result{ .physicalDevice = device };
-
-		vkGetPhysicalDeviceProperties(device, &result.properties);
-
-		vkGetPhysicalDeviceFeatures(device, &result.features);
-
-		uint32_t extensionCount = 0;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-		if (extensionCount > 0) {
-			std::vector<VkExtensionProperties> available(extensionCount);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, available.data());
-
-			std::ranges::transform(available, std::inserter(result.extensions, result.extensions.end()),
-				[](const VkExtensionProperties& ext) { return ext.extensionName; });
+		if (rankedCandidate.score >= 0) {
+			rankedCandidate.device->handle = candidate->handle;
+			selectionCandidates.emplace_back(rankedCandidate);
 		}
-
-		// Evaluate the device and assign a score
-		auto score = evaluateCandidate(result);
-
-		candidates.emplace_back(score, result);
 	}
 
 	// Sort candidates by score in descending order
-	std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
-		auto [scoreA, resultA] = a;
-		auto [scoreB, resultB] = b;
-		return scoreA > scoreB;
+	std::sort(selectionCandidates.begin(), selectionCandidates.end(), [](const auto& a, const auto& b) {
+		return a.score > b.score;
 		});
 
-	return candidates;
+	return selectionCandidates;
 }
+
+/*
+RankedPhysicalDeviceSelector::PhysicalDeviceCandidate RankedPhysicalDeviceSelector::toCandidate(PhysicalDeviceInfo deviceInfo) {
+	
+	const auto& device = deviceInfo.physicalDevice;
+
+	PhysicalDeviceCandidate result{ .physicalDevice = device };
+
+	vkGetPhysicalDeviceProperties(device, &result.properties);
+
+	vkGetPhysicalDeviceFeatures(device, &result.features);
+
+	uint32_t extensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	if (extensionCount > 0) {
+		std::vector<VkExtensionProperties> available(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, available.data());
+
+		std::ranges::transform(available, std::inserter(result.extensions, result.extensions.end()),
+			[](const VkExtensionProperties& ext) { return ext.extensionName; });
+	}
+	
+	return result;
+}*/
 
 } // namespace ember::graphics::vulkan

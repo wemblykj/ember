@@ -1,16 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <memory>
-#include <set>
-#include <vector>
 
 #include <vulkan/vulkan.h>
 
-#include "any_physical_device_selector.h"
 #include "vulkan_defs.h"
-#include "physical_device_selector.h"
+#include "vulkan_instance.h"
 
 namespace ember::graphics::vulkan {
 
@@ -28,13 +24,13 @@ class VulkanContext {
 public:
     virtual ~VulkanContext() = default;
 
-    virtual bool createDefaultInstance(VkInstance& instance, const ExtensionSet& requiredExtensions = {}) = 0;
-    virtual bool initialize(VkInstance instance, PhysicalDeviceSelectorPtr deviceSelector = nullptr) = 0;
-    virtual bool initialize(const ExtensionSet& requiredExtensions = {}, PhysicalDeviceSelectorPtr deviceSelector = nullptr) = 0;
+    virtual bool initialize(const PhysicalDevicePtr& physicalDevice) = 0;
     virtual void destroy() = 0;
 
-    virtual VkInstance getInstance() const = 0;
-    virtual VkPhysicalDevice getPhysicalDevice() const = 0;
+    virtual VulkanInstancePtr getInstance() const = 0;
+    virtual PhysicalDevicePtr getPhysicalDevice() const = 0;
+
+    virtual VkInstance getNativeInstance() const = 0;
     virtual VkDevice getDevice() const = 0;
     virtual VkQueue getGraphicsQueue() const = 0;
     virtual uint32_t getGraphicsQueueFamily() const = 0;

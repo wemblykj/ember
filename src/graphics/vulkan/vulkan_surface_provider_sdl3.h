@@ -5,7 +5,9 @@
 #include "vulkan_surface_provider.h"
 
 #include "surface_provider.h"
-#include "window.h" // your platform::Window wrapper exposing SDL_Window* or native handle
+#include "window.h"
+#include "vulkan_defs.h"
+#include "vulkan_instance.h"
 
 namespace ember::graphics::vulkan {
 
@@ -13,8 +15,10 @@ class VulkanSurfaceProviderSDL3 : public vulkan::VulkanSurfaceProvider {
 public:
     explicit VulkanSurfaceProviderSDL3(platform::Window* window) : window_(window) {}
 
-    std::vector<const char*> getRequiredInstanceExtensions() const override;
-    bool createSurface(VkInstance instance, VkSurfaceKHR &outSurface) override;
+    ExtensionSet getRequiredInstanceExtensions() const override;
+    ExtensionSet getRequiredDeviceExtensions() const override;
+    bool createSurface(const VulkanInstancePtr& instance, VkSurfaceKHR &outSurface) override;
+    void destroySurface(const VulkanInstancePtr& instance, VkSurfaceKHR surface) override;
 
 private:
     platform::Window* window_; // non-owning
