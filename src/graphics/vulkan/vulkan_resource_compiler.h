@@ -18,8 +18,11 @@ namespace ember::graphics::vulkan {
 struct TechniqueRecord {
     VkPipeline pipeline = VK_NULL_HANDLE;                   ///< Graphics pipeline handle
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;       ///< Pipeline layout
+
+    // VK_NULL_HANDLE if unused by this technique
     VkShaderModule vertModule = VK_NULL_HANDLE;             ///< Vertex shader module (retained for hot-reload)
     VkShaderModule fragModule = VK_NULL_HANDLE;             ///< Fragment shader module (retained for hot-reload)
+    VkShaderModule computeModule = VK_NULL_HANDLE;
 
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;  ///< Sample count used when creating pipeline
     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; ///< Primitive topology

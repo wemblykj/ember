@@ -30,6 +30,14 @@ public:
     void destroyGeometry(GeometryRecord& geometry, GeometryAllocation& allocation) override;
 
 private:
+    /// @brief Compiles a single shader stage from source into a VkShaderModule.
+    /// Internal helper used by compileTechnique(); not part of the public interface.
+    bool compileShaderStage(const std::string& sourcePath, shaderc_shader_kind kind, VkShaderModule& module);
+    bool compileShaderStage(const ShaderStageDesc& stageDesc, VkShaderModule& module);
+
+    static shaderc_shader_kind toShaderKind(ShaderStage stage);
+    static VkShaderStageFlagBits toShaderStageFlagBits(ShaderStage stage);
+
     std::shared_ptr<VulkanContext> context_;
 	std::unique_ptr<shaderc::Compiler> compiler_;
 	shaderc::CompileOptions options_;

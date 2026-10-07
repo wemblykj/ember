@@ -31,6 +31,9 @@ public:
 
     // ResourceCache
 public:
+    VertexFormatID registerVertexFormat(const VertexFormatDesc& desc) override;
+    void unregisterVertexFormat(VertexFormatID id) override;
+
     void clearAllResources() override;
     ResourceGroupID createResourceGroup(const ResourceGroupDesc& desc) override;
     void releaseResourceGroup(ResourceGroupID group) override;
@@ -103,6 +106,7 @@ private:
 
 	GeometryID invalidGeometryId_ = BuiltinGeometry::Undefined;
 
+    VertexFormatID nextVertexFormatId_ = BuiltinVertexFormat::Custom;
     ResourceGroupID nextGroupId_ = BuiltinResourceGroup::Custom;
     TechniqueID nextTechniqueId_ = BuiltinTechnique::Custom;
     MaterialID nextMaterialId_ = BuiltinMaterial::Custom;

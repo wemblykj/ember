@@ -9,6 +9,11 @@ class ResourceCache {
 public:
     virtual ~ResourceCache() = default;
 
+	/// @brief Register a new vertex format with the specified description. Vertex formats define the layout of vertex data in buffers. Returns a unique VertexFormatID that can be used to reference this format in techniques and geometries.
+    virtual VertexFormatID registerVertexFormat(const VertexFormatDesc& desc) = 0;
+	/// @brief Unregister a previously registered vertex format, freeing any associated resources. After calling this method, the specified VertexFormatID is no longer valid.
+    virtual void unregisterVertexFormat(VertexFormatID id) = 0;
+
     /// @brief Clear all registered resources (techniques, materials, geometries) and reset the renderer to an empty state. This is useful for hot-reloading or resetting the renderer without destroying it.
     virtual void clearAllResources() = 0;
 

@@ -63,7 +63,16 @@ GeometryRecord VulkanResourceCache::ResolveGeometry(GeometryID id)
     }
 
     return it->second.record;
-}   
+}
+
+VertexFormatID VulkanResourceCache::registerVertexFormat(const VertexFormatDesc& desc) {
+	VertexFormatID id = nextVertexFormatId_++;
+	return id;
+}
+
+void VulkanResourceCache::unregisterVertexFormat(VertexFormatID id) {
+	
+}
 
 void VulkanResourceCache::clearAllResources() {
     for (auto& [id, entry] : materials_) { compiler_->destroyMaterial(entry.record); }
