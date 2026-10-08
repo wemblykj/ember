@@ -3,7 +3,6 @@
 #include "vulkan_context.h"
 
 #include <map>
-#include <vector>
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
@@ -44,6 +43,7 @@ public:
     void destroyBuffer(VkBuffer buffer, AllocationHandle allocation) override;
     bool createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage& image, AllocationHandle& allocation) override;
     bool createShaderModule(std::span<const uint32_t> spirvWords, VkShaderModule& shaderModule) override;
+    void destroyShaderModule(VkShaderModule module) override;
 
 private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }

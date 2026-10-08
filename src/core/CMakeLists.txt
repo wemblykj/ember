@@ -9,6 +9,8 @@ target_sources(ember_core PUBLIC
     FILES
         ember_core.h
         logger.h
+        scope_guard.h
+        cleanup_stack.h
         graphics_api.h
         resource_file_provider.h
 )

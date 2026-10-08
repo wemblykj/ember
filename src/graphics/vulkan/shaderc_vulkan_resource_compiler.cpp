@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+#include "cleanup_stack.h"
+
 namespace ember::graphics::vulkan {
 
 ShadercVulkanResourceCompiler::ShadercVulkanResourceCompiler(
@@ -17,6 +19,8 @@ ShadercVulkanResourceCompiler::ShadercVulkanResourceCompiler(
 bool ShadercVulkanResourceCompiler::compileTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) {
 	bool hasVertex = false, hasFragment = false, hasCompute = false;
 
+	core::CleanupStack cleanup;
+
 	std::vector<VkPipelineShaderStageCreateInfo> stages;
 
 	for (const auto& stage : desc.shaderStages) {
@@ -24,9 +28,11 @@ bool ShadercVulkanResourceCompiler::compileTechnique(const TechniqueDesc& desc, 
 
 		VkShaderModule module = VK_NULL_HANDLE;
 		if (!compileShaderStage(stage.sourcePath, kind, module)) {
-			// cleanup any already-compiled modules in outRecord before returning
+			EMBER_LOG_ERROR("Technique '{}': failed to compile shader stage '{}'", desc.name, stage.sourcePath);
 			return false;
 		}
+
+		cleanup.push([&, module] { destroyShaderModule(module); });
 
 		switch (stage.stage) {
 		case ShaderStage::Vertex:   technique.vertModule = module; hasVertex = true; break;
@@ -60,6 +66,8 @@ bool ShadercVulkanResourceCompiler::compileTechnique(const TechniqueDesc& desc, 
 	pipelineInfo.pStages = stages.data();
 
 	vkCreateGraphicsPipelines(context_->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &technique.pipeline);
+
+	cleanup.dismissAll();
 
 	return true;
 }
@@ -115,6 +123,10 @@ bool ShadercVulkanResourceCompiler::compileShaderStage(const ShaderStageDesc& st
 	const auto kind = toShaderKind(stageDesc.stage);
 
 	return compileShaderStage(stageDesc.sourcePath, kind, module);
+}
+
+void ShadercVulkanResourceCompiler::destroyShaderModule(VkShaderModule module) {
+	context_->destroyShaderModule(module);
 }
 
 shaderc_shader_kind ShadercVulkanResourceCompiler::toShaderKind(ShaderStage stage) {

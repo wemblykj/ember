@@ -6,6 +6,7 @@
 #include <vk_mem_alloc.h>
 
 #include <algorithm>
+#include <vector>
 
 #include "any_physical_device_selector.h"
 
@@ -296,6 +297,10 @@ bool VulkanContextVma::createShaderModule(std::span<const uint32_t> spirvWords, 
     }
 
     return true;
+}
+
+void VulkanContextVma::destroyShaderModule(VkShaderModule module) {
+	vkDestroyShaderModule(device_, module, nullptr);
 }
 
 bool VulkanContextVma::createMemoryAllocator() {

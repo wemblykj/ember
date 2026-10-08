@@ -101,6 +101,7 @@ public:
 
     virtual bool createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage& image, AllocationHandle& allocation) = 0;
     virtual bool createShaderModule(std::span<const uint32_t> spirvWords, VkShaderModule& shaderModule) = 0;
+    virtual void destroyShaderModule(VkShaderModule module) = 0;
 };
 
 using VulkanContextPtr = std::shared_ptr<VulkanContext>;
