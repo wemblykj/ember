@@ -5,8 +5,10 @@
 
 #include <graphics_api.h>
 
-#include "surface_provider.h"
-#include "resource_cache.h"
+#include <resource_cache.h>
+
+#include <surface_provider.h>
+
 #include "render_packet.h"
 
 namespace ember::graphics {
@@ -14,7 +16,7 @@ namespace ember::graphics {
 using RenderQueue = std::vector<RenderPacket>;
 
 struct RendererPass {
-    TechniqueID technique = BuiltinTechnique::Opaque;
+    resources::TechniqueID technique = resources::BuiltinTechnique::Opaque;
 	SortPolicy sortPolicy = SortPolicy::MaterialMajor;
     RenderQueue queue;
 };
@@ -33,7 +35,7 @@ public:
     virtual void shutdown() = 0;
 
 	/// @brief Get the resource cache associated with this renderer. The resource cache manages techniques, materials, and geometries used for rendering. This method returns a pointer to the ResourceCache interface, allowing access to resource management functions.
-	virtual ResourceCache& getResourceCache() = 0;
+	virtual resources::ResourceCache& getResourceCache() = 0;
 	
     virtual void beginFrame() = 0;
 

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <ember_math.h>
 
-#include "resources.h"
+#include <resources.h>
 
 namespace ember::graphics {
 
@@ -14,8 +14,8 @@ using SortKey = uint64_t;
 /// @brief A single render packet, representing a draw call with associated transform, material, and geometry.
 struct RenderPacket {
     core::Mat4 transform;
-    MaterialID materialId = BuiltinMaterial::Undefined;
-    GeometryID geometryId = BuiltinGeometry::Undefined;
+    resources::MaterialID materialId = resources::BuiltinMaterial::Undefined;
+    resources::GeometryID geometryId = resources::BuiltinGeometry::Undefined;
     SortKey sortKey = 0;
 };
 

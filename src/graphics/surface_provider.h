@@ -11,4 +11,4 @@ public:
 
 using SurfaceProviderPtr = std::shared_ptr<SurfaceProvider>;
 
-}
+} // namespace ember::graphics

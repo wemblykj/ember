@@ -1,7 +1,11 @@
 //#include "sample_scene.h"
-#include "application.h"
-#include "core/logger.h"
-#include <chrono>
+
+#include <logger.h>
+#include <window.h>
+#include <application.h>
+#include <renderer.h>
+
+using namespace ember::application;
 
 int main(int argc, char* argv[]) {
     using namespace ember;

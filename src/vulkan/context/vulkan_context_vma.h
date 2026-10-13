@@ -1,0 +1,79 @@
+#pragma once
+
+#include "vulkan_context.h"
+
+#include <map>
+
+#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
+
+#include "vulkan_defs.h"
+#include "vulkan_instance.h"
+#include "resources/vulkan_resource_defs.h"
+
+namespace ember::vulkan {
+
+/**
+* @brief Concrete implementation of VulkanContext using Vulkan Memory Allocator (VMA) for memory management.
+*/
+class VulkanContextVma : public VulkanContext {
+
+public:
+    VulkanContextVma(const VulkanInstancePtr& instance);
+    ~VulkanContextVma();
+
+    bool initialize(const PhysicalDevicePtr& physicalDevice) override;
+
+    void destroy() override;
+
+    void waitIdle() override;
+
+    VulkanInstancePtr getInstance() const override { return instance_; }
+    PhysicalDevicePtr getPhysicalDevice() const override { return physicalDevice_; }
+
+    VkInstance getNativeInstance() const override { return instance_->get(); }
+    VkDevice getDevice() const override { return device_; }
+    VkQueue getGraphicsQueue() const override { return graphicsQueue_; }
+    uint32_t getGraphicsQueueFamily() const override { return graphicsQueueFamily_; }
+
+    VkResult createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, VkCommandPool& pool) override ;
+    void destroyCommandPool(VkCommandPool pool) override;
+    VkResult allocateCommandBuffers(VkCommandPool pool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer* outBuffers) override;
+    void freeCommandBuffers(VkCommandPool pool, uint32_t count, const VkCommandBuffer* buffers) override;
+    VkCommandBuffer beginOneTimeCommands() override;
+    void endOneTimeCommands(VkCommandBuffer cmd) override;
+    bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, AllocationHandle& allocation) override;
+    void destroyBuffer(VkBuffer buffer, AllocationHandle allocation) override;
+    bool createImage(VkDeviceSize size, VkImageType type, VkImageUsageFlags usage, VkImage& image, AllocationHandle& allocation) override;
+    bool createShaderModule(std::span<const uint32_t> spirvWords, VkShaderModule& shaderModule) override;
+    void destroyShaderModule(VkShaderModule module) override;
+
+private:
+    VkPipelineCache getPipelineCache() const { return pipelineCache_; }
+
+private:
+    bool createLogicalDevice(const PhysicalDevicePtr& physicalDevice);
+	bool createMemoryAllocator();
+
+    static VmaAllocation toVma(AllocationHandle handle) {
+        assert(handle.backend == AllocationHandle::Backend::Vma); 
+        return reinterpret_cast<VmaAllocation>(handle.handle); 
+    }
+
+	static AllocationHandle toAllocationHandle(VmaAllocation allocation) {
+        return AllocationHandle{ AllocationHandle::Backend::Vma, reinterpret_cast<uintptr_t>(allocation) };
+    }
+
+    bool initialized_ = false;
+    VulkanInstancePtr instance_ = VK_NULL_HANDLE;
+    PhysicalDevicePtr physicalDevice_;
+
+    VkDevice device_ = VK_NULL_HANDLE;
+    VkQueue graphicsQueue_ = VK_NULL_HANDLE;
+    uint32_t graphicsQueueFamily_ = 0;
+    VkPipelineCache pipelineCache_ = VK_NULL_HANDLE;
+    VmaAllocator allocator_ = VK_NULL_HANDLE;
+	VkCommandPool commandPool_ = VK_NULL_HANDLE;
+};
+
+}  // namespace ember::vulkan
