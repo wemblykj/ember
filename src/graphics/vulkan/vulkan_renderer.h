@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "resource_file_provider.h"
 #include "vulkan_context.h"
 #include "vulkan_resource_cache.h"
 #include "vulkan_surface_provider.h"
@@ -82,6 +83,6 @@ private:
 /**
  * Factory function for creating Vulkan renderers
  */
-RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider);
+RendererPtr createRenderer(const RendererConfig& config, core::ResourceFileProviderPtr fileProvider, SurfaceProviderPtr surfaceProvider);
 
 }  // namespace ember::graphics::vulkan

@@ -4,8 +4,9 @@
 #include <map>
 
 #include "default_physical_device_selector.h"
+#include "default_vulkan_resource_builder.h"
 #include "native_file_provider.h"
-#include "shaderc_vulkan_resource_compiler.h"
+#include "shaderc_vulkan_shader_compiler.h"
 #include "vulkan_context_vma.h"
 
 namespace ember::graphics::vulkan {
@@ -485,16 +486,16 @@ uint32_t VulkanRenderer::chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabi
     return std::clamp(preferredCount, capabilities.minImageCount, capabilities.maxImageCount);
 }
 
-RendererPtr createRenderer(const RendererConfig& config, SurfaceProviderPtr surfaceProvider) {
+RendererPtr createRenderer(const RendererConfig& config, core::ResourceFileProviderPtr fileProvider, SurfaceProviderPtr surfaceProvider) {
     auto context = std::make_shared<VulkanContextVma>();
 
-	auto fileProvider = std::make_shared<ember::core::NativeFileProvider>();
-
     shaderc::CompileOptions compilerOptions;
-    auto resourceCompiler = std::make_unique<ShadercVulkanResourceCompiler>(compilerOptions, context, fileProvider);
+    auto shaderCompiler = std::make_unique<ShadercVulkanShaderCompiler>(compilerOptions, context, fileProvider);
+
+	auto resourceBuilder = std::make_unique<DefaultVulkanResourceBuilder>(context, std::move(shaderCompiler), fileProvider);
 
     ResourceCacheConfig resourceCacheConfig;
-    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceCompiler));
+    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceBuilder));
 
     auto renderer = std::make_unique<VulkanRenderer>(config, context, resourceCache);
     if (renderer->initialize(surfaceProvider)) {

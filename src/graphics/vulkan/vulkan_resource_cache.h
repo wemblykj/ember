@@ -9,7 +9,7 @@
 
 #include "../resources.h" // ResourceGroupID, TechniqueID, MaterialID, GeometryID, Builtin*
 #include "vulkan_context.h"
-#include "vulkan_resource_compiler.h"
+#include "vulkan_resource_builder.h"
 
 namespace ember::graphics::vulkan {
 
@@ -20,7 +20,7 @@ class VulkanResourceCache : public ResourceCache {
 public:
     VulkanResourceCache(const ResourceCacheConfig& config, 
     	std::shared_ptr<VulkanContext> context,
-        std::unique_ptr<VulkanResourceCompiler> compiler);
+        std::unique_ptr<VulkanResourceBuilder> compiler);
     ~VulkanResourceCache() override;
 
     // VulkanResourceCache
@@ -94,7 +94,7 @@ private:
     ResourceCacheConfig config_;
 
     std::shared_ptr<VulkanContext> context_;
-    std::unique_ptr<VulkanResourceCompiler> compiler_;
+    std::unique_ptr<VulkanResourceBuilder> compiler_;
 
 	TechniqueID invalidTechniqueId_ = BuiltinTechnique::Undefined;
     TechniqueID unassignedTechniqueId_ = BuiltinTechnique::Undefined;

@@ -6,7 +6,7 @@ namespace ember::graphics::vulkan {
 
 VulkanResourceCache::VulkanResourceCache(const ResourceCacheConfig& config, 
 	std::shared_ptr<VulkanContext> context,
-    std::unique_ptr<VulkanResourceCompiler> compiler)
+    std::unique_ptr<VulkanResourceBuilder> compiler)
     : config_(config)
 	, context_(context)
 	, compiler_(std::move(compiler))

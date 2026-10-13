@@ -1,12 +1,12 @@
 #pragma once
 
+#include "vulkan_resource_builder.h"
+
 #include <memory>
 
-#include <shaderc/shaderc.hpp>
-
 #include "resource_file_provider.h"
-#include "vulkan_resource_compiler.h"
 #include "vulkan_context.h"
+#include "vulkan_shader_compiler.h"
 
 namespace ember::graphics::vulkan {
 
@@ -14,11 +14,11 @@ namespace ember::graphics::vulkan {
  * @brief Compiles shader source via shaderc and creates Vulkan pipelines,
  * descriptor layouts, and geometry buffers.
  */
-class ShadercVulkanResourceCompiler : public VulkanResourceCompiler {
+class DefaultVulkanResourceBuilder : public VulkanResourceBuilder {
 public:
-    explicit ShadercVulkanResourceCompiler(
-    	shaderc::CompileOptions& options, 
+    explicit DefaultVulkanResourceBuilder(
     	std::shared_ptr<VulkanContext> context,
+        std::unique_ptr<VulkanShaderCompiler> shaderCompiler,
         std::shared_ptr<core::ResourceFileProvider> fileProvider);
 
     bool compileTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) override;
@@ -30,23 +30,12 @@ public:
     void destroyGeometry(GeometryRecord& geometry, GeometryAllocation& allocation) override;
 
 private:
-    /// @brief Compiles a single shader stage from source into a VkShaderModule.
-    /// Internal helper used by compileTechnique(); not part of the public interface.
-    bool compileShaderStage(const std::string& sourcePath, shaderc_shader_kind kind, VkShaderModule& module);
-    bool compileShaderStage(const ShaderStageDesc& stageDesc, VkShaderModule& module);
-    void destroyShaderModule(VkShaderModule module);
-
-    static shaderc_shader_kind toShaderKind(ShaderStage stage);
     static VkShaderStageFlagBits toShaderStageFlagBits(ShaderStage stage);
 
     std::shared_ptr<VulkanContext> context_;
-	std::unique_ptr<shaderc::Compiler> compiler_;
-	shaderc::CompileOptions options_;
+    std::unique_ptr<VulkanShaderCompiler> shaderCompiler_;
     std::shared_ptr<core::ResourceFileProvider> fileProvider_;
-
-    // shaderc::Compiler instance, options, etc. kept private to this implementation
 };
 
-std::unique_ptr<VulkanResourceCompiler> createShadercVulkanResourceCompiler(std::shared_ptr<VulkanContext> context);
-
+std::unique_ptr<VulkanResourceBuilder> createDefaultVulkanResourceBuilder(std::shared_ptr<VulkanContext> context, std::unique_ptr<VulkanShaderCompiler> shaderCompiler, std::shared_ptr<core::ResourceFileProvider> fileProvider);
 } // namespace ember::graphics::vulkan

@@ -38,7 +38,8 @@ target_sources(ember_graphics PRIVATE
     vulkan/any_physical_device_selector.cpp
     vulkan/ranked_physical_device_selector.cpp
     vulkan/default_physical_device_selector.cpp
-    vulkan/shaderc_vulkan_resource_compiler.cpp
+    vulkan/default_vulkan_resource_builder.cpp
+    vulkan/shaderc_vulkan_shader_compiler.cpp
 )
 
 target_sources(ember_graphics PUBLIC
@@ -50,15 +51,17 @@ target_sources(ember_graphics PUBLIC
         render_packet.h
         renderer.h
         surface_provider.h
+        vulkan/vulkan_defs.h
+        vulkan/vulkan_resource_defs.h
         vulkan/vulkan_context.h
         vulkan/vulkan_renderer.h
         vulkan/vulkan_surface_provider.h
-        vulkan/vulkan_resource_compiler.h
+        vulkan/vulkan_resource_builder.h
         vulkan/vulkan_surface_provider_sdl3.h
         vulkan/any_physical_device_selector.h
         vulkan/default_physical_device_selector.h
         vulkan/ranked_physical_device_selector.h
-)
+ )
 
 target_include_directories(ember_graphics PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

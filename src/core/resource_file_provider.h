@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+
 namespace ember::core {
 
 /**
@@ -31,5 +35,7 @@ public:
      */
     virtual bool exists(const std::string& path) = 0;
 };
+
+using ResourceFileProviderPtr = std::shared_ptr<ResourceFileProvider>;
 
 } // namespace ember::core

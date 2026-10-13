@@ -1,8 +1,10 @@
 #pragma once
 
-#include "platform/window.h"
-#include "graphics/renderer.h"
 #include <memory>
+
+#include "graphics/renderer.h"
+#include "platform/window.h"
+#include "resource_file_provider.h"
 
 namespace ember {
 
@@ -23,6 +25,7 @@ public:
     graphics::Renderer* getRenderer() const { return renderer_.get(); }
 
 private:
+    core::ResourceFileProviderPtr fileProvider_;
     platform::WindowPtr window_;
 	graphics::SurfaceProviderPtr surfaceProvider_;
     graphics::RendererPtr renderer_;

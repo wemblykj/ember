@@ -10,6 +10,13 @@
 namespace ember::graphics::vulkan {
 
 /**
+ * @brief Structure representing an allocation handle for Vulkan resources. This structure contains information about the backend used for memory allocation and an opaque handle to the allocated memory.
+ */
+struct AllocationHandle {
+    enum class Backend : uint8_t { None = 0, Vma, Vk } backend = Backend::None; uintptr_t handle = 0; // opaque storage for backend-specific handle
+};
+
+/**
     * @brief Technique (pipeline) record.
     *
     * Stores compiled pipeline objects and shader modules required to bind a
@@ -31,7 +38,7 @@ struct TechniqueRecord {
 
     /// Descriptor set layout materials using this technique must allocate against
     /// (typically set=1, reserving set=0 for global/per-frame data).
-	VkDescriptorSetLayout materialDescriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout materialDescriptorSetLayout = VK_NULL_HANDLE;
 };
 
 /**
@@ -70,27 +77,6 @@ struct GeometryRecord {
 struct GeometryAllocation {
     AllocationHandle vertexMemory;
     AllocationHandle indexMemory;
-};
-
-/**
- * @brief Compiles backend-agnostic resource descriptions into Vulkan GPU objects.
- *
- * Implementations handle shader compilation (e.g. via shaderc), pipeline
- * creation, descriptor layout generation, and buffer/image uploads. The
- * resource cache calls this interface during registration; it does not
- * perform compilation itself.
- */
-class VulkanResourceCompiler {
-public:
-    virtual ~VulkanResourceCompiler() = default;
-
-    virtual bool compileTechnique(const TechniqueDesc& desc, TechniqueRecord& outRecord) = 0;
-    virtual bool compileMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& outRecord) = 0;
-    virtual bool compileGeometry(const GeometryDesc& desc, GeometryRecord& outRecord, GeometryAllocation& allocation) = 0;
-
-    virtual void destroyTechnique(TechniqueRecord& record) = 0;
-    virtual void destroyMaterial(MaterialRecord& record) = 0;
-    virtual void destroyGeometry(GeometryRecord& record, GeometryAllocation& allocation) = 0;
 };
 
 } // namespace ember::graphics::vulkan

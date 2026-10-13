@@ -1,5 +1,6 @@
 #include "application.h"
 
+#include "native_file_provider.h"
 #include "platform/sdl3/sdl3_window.h"
 
 #include "graphics/vulkan/vulkan_renderer.h"
@@ -27,10 +28,12 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
         return false;
     }
 
+    fileProvider_ = std::make_shared<NativeFileProvider>();
+
     surfaceProvider_ = graphics::vulkan::createSDLSurfaceProvider(window_.get());
 
     // Create renderer
-    renderer_ = graphics::vulkan::createRenderer(rendererConfig, surfaceProvider_);
+    renderer_ = graphics::vulkan::createRenderer(rendererConfig, fileProvider_, surfaceProvider_);
     if (!renderer_) {
         EMBER_LOG_ERROR("Failed to create renderer");
         return false;
