@@ -1,14 +1,15 @@
 #pragma once
 
-#include "../renderer.h"
+#include <renderer.h>
 
 #include <memory>
 #include <vector>
 
-#include "resource_file_provider.h"
-#include "vulkan_context.h"
-#include "vulkan_resource_cache.h"
-#include "vulkan_surface_provider.h"
+#include <resource_file_provider.h>
+
+#include "context/vulkan_context.h"
+#include "resources/vulkan_resource_cache.h"
+#include "presentation/vulkan_surface_provider.h"
 
 namespace ember::graphics::vulkan {
 

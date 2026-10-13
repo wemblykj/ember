@@ -130,7 +130,7 @@ TechniqueID VulkanResourceCache::registerTechnique(const TechniqueDesc& desc, Re
     TechniqueID id = nextTechniqueId_++;
     TechniqueEntry entry;
     entry.group = group;
-    if (!compiler_->compileTechnique(desc, entry.record)) {
+    if (!compiler_->buildTechnique(desc, entry.record)) {
         EMBER_LOG_ERROR("Failed to compile technique '{}'", desc.name);
         return BuiltinTechnique::Opaque; // or an error sentinel
     }
@@ -149,7 +149,7 @@ MaterialID VulkanResourceCache::registerMaterial(const MaterialDesc& desc, Resou
 
     MaterialEntry entry;
     entry.group = group;
-    if (!compiler_->compileMaterial(desc, technique, entry.record)) {
+    if (!compiler_->buildMaterial(desc, technique, entry.record)) {
         EMBER_LOG_ERROR("Failed to compile material '{}'", desc.name);
         return invalidMaterialId_;
     }
@@ -163,7 +163,7 @@ GeometryID VulkanResourceCache::registerGeometry(const GeometryDesc& desc, Resou
     GeometryID id = nextGeometryId_++;
 	GeometryEntry entry;
 	entry.group = group;
-    if (!compiler_->compileGeometry(desc, entry.record, entry.allocation)) {
+    if (!compiler_->buildGeometry(desc, entry.record, entry.allocation)) {
         EMBER_LOG_ERROR("Failed to compile geometry");
         return invalidGeometryId_;
 	}

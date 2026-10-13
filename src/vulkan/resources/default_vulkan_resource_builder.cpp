@@ -13,7 +13,7 @@ DefaultVulkanResourceBuilder::DefaultVulkanResourceBuilder(
     , fileProvider_(std::move(fileProvider)) {
 }
 
-bool DefaultVulkanResourceBuilder::compileTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) {
+bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) {
 	bool hasVertex = false, hasFragment = false, hasCompute = false;
 
 	core::CleanupStack cleanup;
@@ -67,18 +67,31 @@ bool DefaultVulkanResourceBuilder::compileTechnique(const TechniqueDesc& desc, T
 	return true;
 }
 
-bool DefaultVulkanResourceBuilder::compileMaterial(const MaterialDesc& desc, const TechniqueRecord& technique,
+bool DefaultVulkanResourceBuilder::buildMaterial(const MaterialDesc& desc, const TechniqueRecord& technique,
 	MaterialRecord& material) {
 	throw std::runtime_error("Not implemented");
 }
 
-bool DefaultVulkanResourceBuilder::compileGeometry(const GeometryDesc& desc, GeometryRecord& geometry,
+bool DefaultVulkanResourceBuilder::buildGeometry(const GeometryDesc& desc, GeometryRecord& geometry,
 	GeometryAllocation& outAllocation) {
 	throw std::runtime_error("Not implemented");
 }
 
 void DefaultVulkanResourceBuilder::destroyTechnique(TechniqueRecord& technique) {
-	throw std::runtime_error("Not implemented");
+	if (technique.fragModule == VK_NULL_HANDLE) {
+		shaderCompiler_->destroyShaderModule(technique.fragModule);
+		technique.fragModule = VK_NULL_HANDLE;
+	}
+
+	if (technique.vertModule == VK_NULL_HANDLE) {
+		shaderCompiler_->destroyShaderModule(technique.vertModule);
+		technique.vertModule = VK_NULL_HANDLE;
+	}
+
+	if (technique.computeModule == VK_NULL_HANDLE) {
+		shaderCompiler_->destroyShaderModule(technique.computeModule);
+		technique.computeModule = VK_NULL_HANDLE;
+	}
 }
 
 void DefaultVulkanResourceBuilder::destroyMaterial(MaterialRecord& material) {

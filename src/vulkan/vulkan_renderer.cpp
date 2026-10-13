@@ -3,11 +3,12 @@
 #include <logger.h>
 #include <map>
 
-#include "default_physical_device_selector.h"
-#include "default_vulkan_resource_builder.h"
-#include "native_file_provider.h"
-#include "shaderc_vulkan_shader_compiler.h"
-#include "vulkan_context_vma.h"
+#include <resource_file_provider.h>
+
+#include "context/default_physical_device_selector.h"
+#include "context/vulkan_context_vma.h"
+#include "resources/default_vulkan_resource_builder.h"
+#include "resources/shaderc_vulkan_shader_compiler.h"
 
 namespace ember::graphics::vulkan {
 

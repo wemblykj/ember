@@ -5,7 +5,7 @@
 namespace ember::graphics::vulkan {
 
 /**
- * @brief Compiles backend-agnostic resource descriptions into Vulkan GPU objects.
+ * @brief Builds backend-agnostic resource descriptions into Vulkan GPU objects.
  *
  * Implementations handle shader compilation (e.g. via shaderc), pipeline
  * creation, descriptor layout generation, and buffer/image uploads. The
@@ -16,9 +16,9 @@ class VulkanResourceBuilder {
 public:
     virtual ~VulkanResourceBuilder() = default;
 
-    virtual bool compileTechnique(const TechniqueDesc& desc, TechniqueRecord& outRecord) = 0;
-    virtual bool compileMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& outRecord) = 0;
-    virtual bool compileGeometry(const GeometryDesc& desc, GeometryRecord& outRecord, GeometryAllocation& allocation) = 0;
+    virtual bool buildTechnique(const TechniqueDesc& desc, TechniqueRecord& outRecord) = 0;
+    virtual bool buildMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& outRecord) = 0;
+    virtual bool buildGeometry(const GeometryDesc& desc, GeometryRecord& outRecord, GeometryAllocation& allocation) = 0;
 
     virtual void destroyTechnique(TechniqueRecord& record) = 0;
     virtual void destroyMaterial(MaterialRecord& record) = 0;

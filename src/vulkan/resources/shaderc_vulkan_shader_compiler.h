@@ -6,8 +6,9 @@
 
 #include <shaderc/shaderc.hpp>
 
-#include "resource_file_provider.h"
-#include "vulkan_context.h"
+#include <resource_file_provider.h>
+
+#include "../context/vulkan_context.h"
 
 namespace ember::graphics::vulkan {
 

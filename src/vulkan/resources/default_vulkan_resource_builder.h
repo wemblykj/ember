@@ -4,8 +4,9 @@
 
 #include <memory>
 
-#include "resource_file_provider.h"
-#include "vulkan_context.h"
+#include <resource_file_provider.h>
+
+#include "../context/vulkan_context.h"
 #include "vulkan_shader_compiler.h"
 
 namespace ember::graphics::vulkan {
@@ -21,9 +22,9 @@ public:
         std::unique_ptr<VulkanShaderCompiler> shaderCompiler,
         std::shared_ptr<core::ResourceFileProvider> fileProvider);
 
-    bool compileTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) override;
-    bool compileMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& material) override;
-    bool compileGeometry(const GeometryDesc& desc, GeometryRecord& geometry, GeometryAllocation& allocation) override;
+    bool buildTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) override;
+    bool buildMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& material) override;
+    bool buildGeometry(const GeometryDesc& desc, GeometryRecord& geometry, GeometryAllocation& allocation) override;
 
     void destroyTechnique(TechniqueRecord& technique) override;
     void destroyMaterial(MaterialRecord& material) override;

@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
-#include "vulkan_resource_defs.h"
+#include "../resources/vulkan_resource_defs.h"
 
 namespace ember::graphics::vulkan {
 

@@ -8,8 +8,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include "vulkan_defs.h"
-#include "vulkan_resource_defs.h"
+#include "../vulkan_defs.h"
+#include "../resources/vulkan_resource_defs.h"
 #include "physical_device_selector.h"
 
 namespace ember::graphics::vulkan {

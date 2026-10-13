@@ -1,11 +1,12 @@
 #pragma once
 
+#include <vector>
+
 #include <vulkan/vulkan.h>
 
-#include "../resources.h" // ResourceGroupID, TechniqueID, MaterialID, GeometryID, Builtin*
+#include <resources.h>
 
-#include "vulkan_defs.h"
-#include <vector>
+#include "../vulkan_defs.h"
 
 namespace ember::graphics::vulkan {
 

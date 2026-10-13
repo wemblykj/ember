@@ -5,10 +5,10 @@
 
 #include <vulkan/vulkan.h>
 
+#include <resources.h>
 #include <resource_cache.h>
 
-#include "../resources.h" // ResourceGroupID, TechniqueID, MaterialID, GeometryID, Builtin*
-#include "vulkan_context.h"
+#include "../context/vulkan_context.h"
 #include "vulkan_resource_builder.h"
 
 namespace ember::graphics::vulkan {

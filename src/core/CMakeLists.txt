@@ -1,6 +1,5 @@
 add_library(ember_core STATIC
-    logger.cpp 
-    native_file_provider.cpp
+    logger.cpp
 )
 
 target_sources(ember_core PUBLIC
@@ -12,14 +11,11 @@ target_sources(ember_core PUBLIC
         scope_guard.h
         cleanup_stack.h
         graphics_api.h
-        resource_file_provider.h
 )
 
 target_include_directories(ember_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-find_package(glm REQUIRED)
 
 target_link_libraries(ember_core PUBLIC 
     ember_cxx_requirements

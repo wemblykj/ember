@@ -2,8 +2,9 @@
 
 #include <memory>
 
-#include "graphics/renderer.h"
-#include "platform/window.h"
+#include <window.h>
+#include <renderer.h>
+
 #include "resource_file_provider.h"
 
 namespace ember {

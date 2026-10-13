@@ -1,10 +1,12 @@
 #include "application.h"
 
-#include "native_file_provider.h"
-#include "platform/sdl3/sdl3_window.h"
 
-#include "graphics/vulkan/vulkan_renderer.h"
-#include "graphics/vulkan/vulkan_surface_provider_sdl3.h"
+#include <sdl3/sdl3_window.h>
+
+#include <vulkan_renderer.h>
+#include <presentation/vulkan_surface_provider_sdl3.h>
+
+#include "native_file_provider.h"
 
 namespace ember {
 

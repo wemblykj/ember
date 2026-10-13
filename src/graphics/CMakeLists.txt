@@ -1,45 +1,7 @@
-add_library(ember_graphics STATIC)
-
-option(EMBER_BUILD_SHADERC_UNOFFICIAL "Build with unofficial shaderc support" ON)
-
-
-# Vulkan
-if (NOT EMBER_BUILD_SHADERC_UNOFFICIAL)
-
-    find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
-
-    target_link_libraries(ember_graphics PRIVATE
-        Vulkan::shaderc_combined
-    )
-
-else()
-
-    find_package(Vulkan REQUIRED COMPONENTS)
-    find_package(glslang CONFIG REQUIRED)
-    find_package(SPIRV-Tools CONFIG REQUIRED)
-    find_package(unofficial-shaderc CONFIG REQUIRED)
-
-    target_link_libraries(ember_graphics PRIVATE
-        glslang::glslang glslang::glslang-default-resource-limits glslang::SPIRV
-        SPIRV-Tools-static
-        unofficial::shaderc::shaderc
-    )
-
-endif()
-
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+add_library(ember_graphics INTERFACE)
 
 # Graphics sources
 target_sources(ember_graphics PRIVATE
-    vulkan/vulkan_context_vma.cpp
-    vulkan/vulkan_resource_cache.cpp
-    vulkan/vulkan_renderer.cpp
-    vulkan/vulkan_surface_provider_sdl3.cpp
-    vulkan/any_physical_device_selector.cpp
-    vulkan/ranked_physical_device_selector.cpp
-    vulkan/default_physical_device_selector.cpp
-    vulkan/default_vulkan_resource_builder.cpp
-    vulkan/shaderc_vulkan_shader_compiler.cpp
 )
 
 target_sources(ember_graphics PUBLIC
@@ -47,41 +9,19 @@ target_sources(ember_graphics PUBLIC
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
         graphics_types.h
-        resources.h
         render_packet.h
         renderer.h
         surface_provider.h
-        vulkan/vulkan_defs.h
-        vulkan/vulkan_resource_defs.h
-        vulkan/vulkan_context.h
-        vulkan/vulkan_renderer.h
-        vulkan/vulkan_surface_provider.h
-        vulkan/vulkan_resource_builder.h
-        vulkan/vulkan_surface_provider_sdl3.h
-        vulkan/any_physical_device_selector.h
-        vulkan/default_physical_device_selector.h
-        vulkan/ranked_physical_device_selector.h
  )
 
-target_include_directories(ember_graphics PUBLIC
+target_include_directories(ember_graphics INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Vulkan_INCLUDE_DIRS}
 )
 
-target_link_libraries(ember_graphics PRIVATE
-    Vulkan::Vulkan
-    GPUOpen::VulkanMemoryAllocator
-)
-
-target_link_libraries(ember_graphics PUBLIC
+target_link_libraries(ember_graphics INTERFACE
     ember_cxx_requirements
     ember_core
+    ember_math
     ember_platform
-)
-
-target_precompile_headers(ember_graphics PRIVATE
-    <string>
-    <ember_core.h>
-    <ember_math.h>
-    <ember_platform.h>
+    ember_resources
 )
