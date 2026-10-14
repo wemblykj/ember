@@ -1,6 +1,9 @@
 #include "scoped_vulkan_instance.h"
 
 #include <algorithm>
+#include <ranges>
+
+#include <logger.h>
 
 namespace ember::vulkan {
 

@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <logger.h>
+
 #include "any_physical_device_selector.h"
 
 namespace ember::vulkan {

@@ -34,9 +34,9 @@ enable_testing()
 add_library(ember_cxx_requirements INTERFACE)
 target_compile_features(ember_cxx_requirements INTERFACE cxx_std_20)
 # optional: enforce required/disable extensions for consumers
-target_compile_options(ember_cxx_requirements INTERFACE
-    $<$<CXX_COMPILER_ID:MSVC>:/permissive->  # example MSVC option
-)
+#target_compile_options(ember_cxx_requirements INTERFACE
+#    $<$<CXX_COMPILER_ID:MSVC>:/permissive->  # example MSVC option
+#)
 
 # Print configuration info
 message(STATUS "=== Ember Engine Configuration ===")

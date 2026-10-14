@@ -1,11 +1,13 @@
 #include "sdl3_window.h"
+
 #include <SDL3/SDL_vulkan.h>
+
+#include <logger.h>
 
 namespace ember::platform::sdl3 {
 
 SDL3Window::SDL3Window(const WindowConfig& config)
     : width_(config.width), height_(config.height) {
-    using namespace ember::core;
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         EMBER_LOG_FATAL("Failed to initialize SDL3: {}", SDL_GetError());

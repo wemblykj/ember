@@ -72,6 +72,7 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
     }
 
     PhysicalDevices candidates;
+
     auto physicalDevice = deviceSelector->select(candidates);
     if (physicalDevice == std::nullopt) {
         EMBER_LOG_WARN("Failed to find a compatible device");
