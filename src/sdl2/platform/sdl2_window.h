@@ -27,6 +27,6 @@ private:
 /**
  * Factory function for creating SDL2 windows
  */
-std::unique_ptr<Window> createWindow(const WindowConfig& config);
+WindowPtr createWindow(const WindowConfig& config);
 
 }  // namespace ember::platform::sdl2

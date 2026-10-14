@@ -21,6 +21,8 @@ add_subdirectory(src/resources)
 add_subdirectory(src/graphics)
 add_subdirectory(src/application)
 add_subdirectory(src/vulkan)
+add_subdirectory(src/sdl2)
+add_subdirectory(src/sdl3)
 
 # Add samples
 add_subdirectory(samples)

@@ -2,6 +2,8 @@
 
 #include <resource_file_provider.h>
 
+#include <filesystem>
+
 namespace ember::application {
 
 /**
@@ -9,9 +11,17 @@ namespace ember::application {
  */
 class NativeFileProvider : public resources::ResourceFileProvider {
 public:
-    std::optional<std::string> readText(const std::string& path) override;
-    std::optional<std::vector<std::byte>> readBinary(const std::string& path) override;
-    bool exists(const std::string& path) override;
+    NativeFileProvider(const std::filesystem::path& root, bool enforceBoundary = true);
+
+    std::optional<std::string> readText(std::string_view path) const override;
+    std::optional<std::vector<std::byte>> readBinary(std::string_view path) const override;
+    bool exists(std::string_view path) const override;
+
+private:
+    std::filesystem::path resolvePath(std::string_view path) const;
+
+    std::filesystem::path root_;
+    bool enforceBoundary_;
 };
 
 } // namespace ember::application

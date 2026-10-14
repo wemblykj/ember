@@ -1,8 +1,11 @@
 #pragma once
 
-#include "../window.h"
-#include <SDL3/SDL.h>
+#include <window.h>
+
+#include <cstdint>
 #include <memory>
+
+#include <SDL3/SDL.h>
 
 namespace ember::platform::sdl3 {
 
@@ -27,6 +30,6 @@ private:
 /**
  * Factory function for creating SDL3 windows
  */
-std::unique_ptr<Window> createWindow(const WindowConfig& config);
+WindowPtr createWindow(const WindowConfig& config);
 
 }  // namespace ember::platform::sdl3

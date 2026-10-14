@@ -1,7 +1,7 @@
 #include "application.h"
 
 
-#include <sdl3/sdl3_window.h>
+#include <platform/sdl3_window.h>
 
 #include <vulkan_renderer.h>
 #include <presentation/vulkan_surface_provider_sdl3.h>
@@ -30,7 +30,7 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
         return false;
     }
 
-    fileProvider_ = std::make_shared<NativeFileProvider>();
+    fileProvider_ = std::make_shared<NativeFileProvider>("./resources");
 
     surfaceProvider_ = vulkan::createSDLSurfaceProvider(window_.get());
 

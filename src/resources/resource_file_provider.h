@@ -23,17 +23,17 @@ public:
      * @param path Logical resource path (interpretation is provider-specific).
      * @return File contents, or std::nullopt if the resource could not be found/read.
      */
-    virtual std::optional<std::string> readText(const std::string& path) = 0;
+    virtual std::optional<std::string> readText(std::string_view path) const = 0;
 
     /**
      * @brief Reads the entire contents of a resource as binary data.
      */
-    virtual std::optional<std::vector<std::byte>> readBinary(const std::string& path) = 0;
+    virtual std::optional<std::vector<std::byte>> readBinary(std::string_view path) const = 0;
 
     /**
      * @brief Returns true if the resource exists and is readable.
      */
-    virtual bool exists(const std::string& path) = 0;
+    virtual bool exists(std::string_view path) const = 0;
 };
 
 using ResourceFileProviderPtr = std::shared_ptr<ResourceFileProvider>;

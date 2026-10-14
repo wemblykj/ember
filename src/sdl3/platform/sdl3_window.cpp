@@ -83,7 +83,7 @@ void SDL3Window::setTitle(const std::string& title) {
     }
 }
 
-std::unique_ptr<Window> createWindow(const WindowConfig& config) {
+WindowPtr createWindow(const WindowConfig& config) {
     return std::make_unique<SDL3Window>(config);
 }
 

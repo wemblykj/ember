@@ -21,6 +21,7 @@ target_link_libraries(ember_application PUBLIC
     ember_resources
     ember_graphics
     ember_vulkan
+    ember_sdl3
 )
 
 target_precompile_headers(ember_application PRIVATE
