@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -46,12 +47,19 @@ struct MaterialDesc {
     TechniqueID technique = BuiltinTechnique::Opaque;
 };
 
+/**
+* @brief Backend-agnostic description of geometry data (vertex/index buffers).
+*
+* vertexData/indexData are non-owning views — the referenced memory must
+* remain valid for the duration of the registerGeometry() call only. The
+* resource builder copies/uploads the data into GPU-resident buffers
+* immediately; GeometryDesc itself never retains or owns this data.
+*/
 struct GeometryDesc {
-    const void* vertexData = nullptr;
-    size_t vertexDataSize = 0;
-    const void* indexData = nullptr;
-    size_t indexDataSize = 0;
+    std::span<const std::byte> vertexData;
+    std::span<const std::byte> indexData;
     uint32_t indexCount = 0;
+    IndexType indexType = IndexType::Undefined;
     VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
 };
 

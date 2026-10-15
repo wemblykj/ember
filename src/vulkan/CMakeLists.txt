@@ -43,6 +43,11 @@ target_sources(ember_vulkan PRIVATE
     vulkan_renderer.cpp
 )
 
+# Private headers
+target_sources(ember_vulkan PRIVATE
+    resources/vulkan_format_mapping.h
+)
+
 target_sources(ember_vulkan PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
