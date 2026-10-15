@@ -1,3 +1,4 @@
 #pragma once
 
-#include "resources.h"
+#include "resource_types.h"
+#include "canned_resources.h"

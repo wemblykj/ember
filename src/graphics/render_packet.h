@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <vector>
 #include <cstdint>
+
 #include <ember_math.h>
 
-#include <resources.h>
+#include <resource_types.h>
+#include <canned_resources.h>
 
 namespace ember::graphics {
 

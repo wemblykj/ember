@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <resources.h>
+#include <resource_types.h>
 
 #include "../vulkan_defs.h"
 
@@ -78,6 +78,11 @@ struct GeometryRecord {
 struct GeometryAllocation {
     AllocationHandle vertexMemory;
     AllocationHandle indexMemory;
+};
+
+struct VertexFormatRecord {
+    std::uint32_t stride = 0;                                   ///< Vertex stride in bytes
+    std::vector<VkVertexInputAttributeDescription> attributes;  ///< Vertex attribute descriptions
 };
 
 } // namespace ember::vulkan

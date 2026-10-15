@@ -2,7 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <resources.h>
+#include <resource_types.h>
+
 #include "vulkan_resource_defs.h"
 
 namespace ember::vulkan {

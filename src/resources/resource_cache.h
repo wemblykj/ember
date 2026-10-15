@@ -1,6 +1,8 @@
 #pragma once
 
-#include "resources.h"
+#include "resource_types.h"
+#include "canned_resources.h"
+#include "resource_descriptors.h"
 
 namespace ember::resources {
 
@@ -8,11 +10,6 @@ namespace ember::resources {
 class ResourceCache {
 public:
     virtual ~ResourceCache() = default;
-
-	/// @brief Register a new vertex format with the specified description. Vertex formats define the layout of vertex data in buffers. Returns a unique VertexFormatID that can be used to reference this format in techniques and geometries.
-    virtual VertexFormatID registerVertexFormat(const VertexFormatDesc& desc) = 0;
-	/// @brief Unregister a previously registered vertex format, freeing any associated resources. After calling this method, the specified VertexFormatID is no longer valid.
-    virtual void unregisterVertexFormat(VertexFormatID id) = 0;
 
     /// @brief Clear all registered resources (techniques, materials, geometries) and reset the renderer to an empty state. This is useful for hot-reloading or resetting the renderer without destroying it.
     virtual void clearAllResources() = 0;
@@ -29,14 +26,18 @@ public:
     virtual bool assertMaterial(MaterialID id) = 0;
     /// @brief Check if geometry with the specified GeometryID is currently registered and valid. Returns true if the geometry exists, false otherwise.
     virtual bool assertGeometry(GeometryID id) = 0;
+    /// @brief Check if a vertex format with the specified VertexFormatID is currently registered and valid. Returns true if the vertex format exists, false otherwise.
+    virtual bool assertVertexFormat(VertexFormatID id) = 0;
 
     /// @brief Register a new rendering technique with the specified description. Techniques define the fixed-function and shader state used for rendering. Returns a unique TechniqueID that can be used to reference this technique in materials and render passes.
-    virtual TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Default) = 0;
+    virtual TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
     /// @brief Register a new material with the specified description. Materials reference techniques and provide parameter bindings for rendering. Returns a unique MaterialID that can be used in render packets.
-    virtual MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Default) = 0;
+    virtual MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
     /// @brief Register new geometry data (vertex/index buffers) with the specified description. Returns a unique GeometryID that can be used in render packets.
-    virtual GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Default) = 0;
-
+    virtual GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
+	/// @brief Register a new vertex format with the specified description. Vertex formats define the layout of vertex data in buffers. Returns a unique VertexFormatID that can be used to reference this format in techniques and geometries.
+	virtual VertexFormatID registerVertexFormat(const VertexFormatDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;    
+	
 	/// @brief Set the technique to be used when a render packet specifies an invalid technique. This is useful for handling cases where a technique reference is invalid or missing, allowing the renderer to fall back to a default technique instead of failing.
     virtual TechniqueID setInvalidTechniqueId(TechniqueID id) = 0;
 	/// @brief Set the default technique to be used when a render packet does not specify a technique. This is useful for ensuring that all geometry is rendered with a valid technique, even if the user forgets to assign one.
