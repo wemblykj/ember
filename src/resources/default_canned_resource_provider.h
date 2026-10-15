@@ -13,6 +13,7 @@ public:
 	bool GetTechniqueDescriptor(TechniqueID id, TechniqueDesc& desc) override;
 	bool GetMaterialDescriptor(MaterialID id, MaterialDesc& desc) override;
 	bool GetGeometryDescriptor(GeometryID id, GeometryDesc& desc) override;
+	bool GetVertexFormatDescriptor(VertexFormatID id, VertexFormatDesc& desc) override;
 };
 
 }

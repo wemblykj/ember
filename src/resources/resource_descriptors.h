@@ -48,28 +48,36 @@ struct MaterialDesc {
 };
 
 /**
-* @brief Backend-agnostic description of geometry data (vertex/index buffers).
-*
-* vertexData/indexData are non-owning views — the referenced memory must
-* remain valid for the duration of the registerGeometry() call only. The
-* resource builder copies/uploads the data into GPU-resident buffers
-* immediately; GeometryDesc itself never retains or owns this data.
-*/
+ * @brief Backend-agnostic description of geometry data (vertex/index buffers).
+ *
+ * Vertex data is always required. Index data is optional — if indexType is
+ * Undefined (or indexData is empty), this geometry has no index buffer and
+ * must be drawn directly from vertex data (vkCmdDraw) using vertexCount.
+ * Indexed geometry uses indexCount/indexType instead.
+ */
 struct GeometryDesc {
+    std::string name;
+
+    // --- Vertex data (always required) ---
     std::span<const std::byte> vertexData;
+    uint32_t vertexCount = 0;
+    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
+
+    // --- Index data (optional — absent for non-indexed geometry) ---
     std::span<const std::byte> indexData;
     uint32_t indexCount = 0;
     IndexType indexType = IndexType::Undefined;
-    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
 };
 
 struct VertexAttributeDesc {
+    std::string name;
     uint32_t location;
     VertexFormat format;      // or an engine-level equivalent if you want to stay Vulkan-agnostic
     uint32_t offset;
 };
 
 struct VertexFormatDesc {
+    std::string name;
     uint32_t stride;
     std::vector<VertexAttributeDesc> attributes;
 };

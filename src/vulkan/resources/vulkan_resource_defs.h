@@ -80,4 +80,9 @@ struct GeometryAllocation {
     AllocationHandle indexMemory;
 };
 
+struct VertexFormatRecord {
+    std::uint32_t stride = 0;                                   ///< Vertex stride in bytes
+    std::vector<VkVertexInputAttributeDescription> attributes;  ///< Vertex attribute descriptions
+};
+
 } // namespace ember::vulkan

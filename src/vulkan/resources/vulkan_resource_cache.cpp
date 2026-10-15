@@ -11,7 +11,7 @@ VulkanResourceCache::VulkanResourceCache(const ResourceCacheConfig& config,
     std::unique_ptr<VulkanResourceBuilder> compiler)
     : config_(config)
 	, context_(context)
-	, compiler_(std::move(compiler))
+	, resourceBuilder_(std::move(compiler))
 {
 }
 
@@ -19,14 +19,14 @@ VulkanResourceCache::~VulkanResourceCache() {
     clearAllResources();
 }
 
-TechniqueRecord VulkanResourceCache::ResolveTechnique(TechniqueID id)
+const TechniqueRecord& VulkanResourceCache::ResolveTechnique(TechniqueID id)
 {
     if (id == BuiltinTechnique::Undefined) {
         EMBER_LOG_WARN("Technique ID {} is undefined. Returning default technique.", id);
         return techniques_[BuiltinTechnique::Undefined].record;
 	}
 
-	auto it = techniques_.find(id);
+	const auto it = techniques_.find(id);
     if (it == techniques_.end()) {
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning default technique.", id);
         return techniques_[BuiltinTechnique::Undefined].record;
@@ -35,14 +35,14 @@ TechniqueRecord VulkanResourceCache::ResolveTechnique(TechniqueID id)
     return it->second.record;
 }
 
-MaterialRecord VulkanResourceCache::ResolveMaterial(MaterialID id)
+const MaterialRecord& VulkanResourceCache::ResolveMaterial(MaterialID id)
 {
     if (id == BuiltinMaterial::Undefined) {
         EMBER_LOG_WARN("Material ID {} is undefined. Returning unassigned material.", id);
         return materials_[unassignedMaterialId_].record;
 	}
 
-	auto it = materials_.find(id);
+	const auto it = materials_.find(id);
     if (it == materials_.end()) {
         EMBER_LOG_WARN("Material ID {} is not registered. Returning default material.", id);
         return materials_[unresolvedMaterialId_].record;
@@ -51,14 +51,14 @@ MaterialRecord VulkanResourceCache::ResolveMaterial(MaterialID id)
     return it->second.record;
 }
 
-GeometryRecord VulkanResourceCache::ResolveGeometry(GeometryID id)
+const GeometryRecord& VulkanResourceCache::ResolveGeometry(GeometryID id)
 {
     if (id == BuiltinGeometry::Undefined) {
         EMBER_LOG_WARN("Geometry ID {} is undefined. Returning default geometry.", id);
         return geometry_[BuiltinGeometry::Undefined].record;
     }
 
-	auto it = geometry_.find(id);
+	const auto it = geometry_.find(id);
     if (it == geometry_.end()) {
         EMBER_LOG_WARN("Geometry ID {} is not registered. Returning default geometry.", id);
         return geometry_[BuiltinGeometry::Undefined].record;
@@ -67,31 +67,39 @@ GeometryRecord VulkanResourceCache::ResolveGeometry(GeometryID id)
     return it->second.record;
 }
 
-VertexFormatID VulkanResourceCache::registerVertexFormat(const VertexFormatDesc& desc) {
-	VertexFormatID id = nextVertexFormatId_++;
-	return id;
-}
+const VertexFormatRecord& VulkanResourceCache::ResolveVertexFormat(VertexFormatID id) {
+    if (id == BuiltinVertexFormat::Undefined) {
+        EMBER_LOG_WARN("VertexFormat ID {} is undefined. Returning default vertex format.", id);
+        return vertexFormats_[BuiltinVertexFormat::Undefined].record;
+    }
 
-void VulkanResourceCache::unregisterVertexFormat(VertexFormatID id) {
-	
+	const auto it = vertexFormats_.find(id);
+    if (it == vertexFormats_.end()) {
+        EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning default vertex format.", id);
+        return vertexFormats_[BuiltinVertexFormat::Undefined].record;
+    }
+	return it->second.record;
 }
 
 void VulkanResourceCache::clearAllResources() {
-    for (auto& [id, entry] : materials_) { compiler_->destroyMaterial(entry.record); }
-    for (auto& [id, entry] : techniques_) { compiler_->destroyTechnique(entry.record); }
+    for (auto& [id, entry] : materials_) { resourceBuilder_->destroyMaterial(entry.record); }
+    for (auto& [id, entry] : techniques_) { resourceBuilder_->destroyTechnique(entry.record); }
     for (auto& [id, entry] : geometry_) {
-        compiler_->destroyGeometry(entry.record, entry.allocation);
+        resourceBuilder_->destroyGeometry(entry.record, entry.allocation);
     }
+	for (auto& [id, entry] : vertexFormats_) { resourceBuilder_->destroyVertexFormat(entry.record); }
 
     materials_.clear();
     techniques_.clear();
     geometry_.clear();
+    vertexFormats_.clear();
     groupMembers_.clear();
     groupNames_.clear();
     nextGroupId_ = BuiltinResourceGroup::Custom;
     nextTechniqueId_ = BuiltinTechnique::Custom;
     nextMaterialId_ = BuiltinMaterial::Custom;
     nextGeometryId_ = BuiltinGeometry::Custom;
+    nextVertexFormatId_ = BuiltinVertexFormat::Custom;
 }
 
 ResourceGroupID VulkanResourceCache::createResourceGroup(const ResourceGroupDesc& desc) {
@@ -107,6 +115,7 @@ void VulkanResourceCache::releaseResourceGroup(ResourceGroupID group) {
     for (auto id : it->second.materials) { destroyMaterial(id);  materials_.erase(id); }
     for (auto id : it->second.techniques) { destroyTechnique(id); techniques_.erase(id); }
     for (auto id : it->second.geometry) { destroyGeometry(id);  geometry_.erase(id); }
+    for (auto id : it->second.vertexFormats) { destroyVertexFormat(id); vertexFormats_.erase(id); }
 
     groupMembers_.erase(it);
     EMBER_LOG_INFO("Released resource group '{}'", groupNames_[group]);
@@ -123,13 +132,13 @@ bool VulkanResourceCache::assertTechnique(TechniqueID id)
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning default technique.", id);
         
         TechniqueRecord technique{};
-        if (compiler_->buildCannedTechnique(id, technique)) {
+        if (resourceBuilder_->buildCannedTechnique(id, technique)) {
             addTechnique(BuiltinResourceGroup::Global, id, technique);
+
+            return true;
 		}
-		else {
-            EMBER_LOG_ERROR("Failed to compile canned technique '{}'", id);
-		}
-        
+		
+    	EMBER_LOG_ERROR("Failed to compile canned technique '{}'", id);
     } else {
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning unassigned technique.", id);
 	}
@@ -147,15 +156,39 @@ bool VulkanResourceCache::assertGeometry(GeometryID id)
     return geometry_.contains(id);
 }
 
+bool VulkanResourceCache::assertVertexFormat(VertexFormatID id) {
+    if (vertexFormats_.contains(id)) {
+        return true;
+    }
+
+    if (id < BuiltinVertexFormat::Custom) {
+        EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning default vertex format.", id);
+
+        VertexFormatRecord vertexFormat{};
+        if (resourceBuilder_->buildCannedVertexFormat(id, vertexFormat)) {
+            addVertexFormat(BuiltinResourceGroup::Global, id, vertexFormat);
+
+            return true;
+        }
+        
+    	EMBER_LOG_ERROR("Failed to compile canned vertex format '{}'", id);
+    }
+    else {
+        EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning unassigned vertex format.", id);
+    }
+
+    return false;
+}
+
 TechniqueID VulkanResourceCache::registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) {
-    TechniqueID id = nextTechniqueId_++;
-    
     TechniqueRecord record;
-    if (!compiler_->buildTechnique(desc, record)) {
+    if (!resourceBuilder_->buildTechnique(desc, record)) {
         EMBER_LOG_ERROR("Failed to compile technique '{}'", desc.name);
         return BuiltinTechnique::Opaque; // or an error sentinel
     }
     
+    TechniqueID id = nextTechniqueId_++;
+
     addTechnique(group, id, record);
 
     return id;
@@ -167,13 +200,14 @@ MaterialID VulkanResourceCache::registerMaterial(const MaterialDesc& desc, Resou
         return invalidMaterialId_;
     }
 
-	auto technique = ResolveTechnique(desc.technique);
+	const auto technique = ResolveTechnique(desc.technique);
 
 	MaterialRecord record;
-    if (!compiler_->buildMaterial(desc, technique, record)) {
+    if (!resourceBuilder_->buildMaterial(desc, technique, record)) {
         EMBER_LOG_ERROR("Failed to compile material '{}'", desc.name);
         return invalidMaterialId_;
     }
+
     MaterialID id = nextMaterialId_++;
 
     addMaterial(group, id, record);
@@ -182,16 +216,30 @@ MaterialID VulkanResourceCache::registerMaterial(const MaterialDesc& desc, Resou
 }
 
 GeometryID VulkanResourceCache::registerGeometry(const GeometryDesc& desc, ResourceGroupID group) {
-    GeometryID id = nextGeometryId_++;
-	
     GeometryRecord record;
 	GeometryAllocation allocation;
-    if (!compiler_->buildGeometry(desc, record, allocation)) {
-        EMBER_LOG_ERROR("Failed to compile geometry");
+    if (!resourceBuilder_->buildGeometry(desc, record, allocation)) {
+        EMBER_LOG_ERROR("Failed to compile geometry '{}'", desc.name);
         return invalidGeometryId_;
 	}
 
+    GeometryID id = nextGeometryId_++;
+
 	addGeometry(group, id, record, allocation);
+
+    return id;
+}
+
+VertexFormatID VulkanResourceCache::registerVertexFormat(const VertexFormatDesc& desc, ResourceGroupID group) {
+    VertexFormatRecord record;
+    if (!resourceBuilder_->buildVertexFormat(desc, record)) {
+        EMBER_LOG_ERROR("Failed to compile vertex format '{}'", desc.name);
+        return BuiltinVertexFormat::Undefined; // or an error sentinel
+	}
+
+    VertexFormatID id = nextVertexFormatId_++;
+
+    addVertexFormat(group, id, record);
 
     return id;
 }
@@ -262,55 +310,75 @@ MaterialID VulkanResourceCache::bindMaterial(MaterialID id) {
 void VulkanResourceCache::destroyMaterial(MaterialID id) {
     const auto it = materials_.find(id);
     if (it != materials_.end()) {
-        compiler_->destroyMaterial(it->second.record);
+        resourceBuilder_->destroyMaterial(it->second.record);
     }
 }
 
 void VulkanResourceCache::destroyTechnique(TechniqueID id) {
     const auto it = techniques_.find(id);
     if (it != techniques_.end()) {
-        compiler_->destroyTechnique(it->second.record);
+        resourceBuilder_->destroyTechnique(it->second.record);
     }
 }
 
 void VulkanResourceCache::destroyGeometry(GeometryID id) {
     const auto it = geometry_.find(id);
     if (it != geometry_.end()) {
-        compiler_->destroyGeometry(it->second.record, it->second.allocation);
+        resourceBuilder_->destroyGeometry(it->second.record, it->second.allocation);
     }
 }
 
-void VulkanResourceCache::addTechnique(ResourceGroupID group, TechniqueID id, TechniqueRecord record)
+void VulkanResourceCache::destroyVertexFormat(std::vector<unsigned>::value_type id)
+{
+	const auto it = vertexFormats_.find(id);
+    if (it != vertexFormats_.end()) {
+        resourceBuilder_->destroyVertexFormat(it->second.record);
+	}
+}
+
+void VulkanResourceCache::addTechnique(ResourceGroupID group, TechniqueID id, const TechniqueRecord& record)
 {
     TechniqueEntry entry {
 		{ group },
         record
     };
 
-    techniques_[id] = std::move(entry);
+    techniques_[id] = entry;
     groupMembers_[group].techniques.push_back(id);
 }
 
-void VulkanResourceCache::addMaterial(ResourceGroupID group, MaterialID id, MaterialRecord record)
+void VulkanResourceCache::addMaterial(ResourceGroupID group, MaterialID id, const MaterialRecord& record)
 {
     MaterialEntry entry{
         { group },
         record
     };
 
-    materials_[id] = std::move(entry);
+    materials_[id] = entry;
     groupMembers_[group].materials.push_back(id);
 }
 
-void VulkanResourceCache::addGeometry(ResourceGroupID group, GeometryID id, GeometryRecord record,
-	GeometryAllocation allocation) {
+void VulkanResourceCache::addGeometry(ResourceGroupID group, GeometryID id, const GeometryRecord& record,
+	const GeometryAllocation& allocation) {
 	GeometryEntry entry{
 		{ group },
 		record,
 		allocation
 	};
 
-	geometry_[id] = std::move(entry);
+	geometry_[id] = entry;
 	groupMembers_[group].geometry.push_back(id);
 }
+
+void VulkanResourceCache::addVertexFormat(ResourceGroupID group, VertexFormatID id, const VertexFormatRecord& record) {
+	
+    VertexFormatEntry entry{
+        { group },
+        record
+	};
+
+	vertexFormats_[id] = entry;
+	groupMembers_[group].vertexFormats.push_back(id);
+}
+
 }  // namespace ember::vulkan

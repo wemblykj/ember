@@ -41,6 +41,7 @@ namespace BuiltinGeometry {
 
 namespace BuiltinVertexFormat {
     constexpr VertexFormatID Undefined = 0;
+    constexpr VertexFormatID PositionUV = 1;
     /// @brief Base value for custom vertex formats.
     constexpr VertexFormatID Custom = 0x8000;
 }

@@ -45,6 +45,10 @@ bool DefaultVulkanResourceBuilder::buildCannedGeometry(GeometryID id, GeometryRe
 	return false;
 }
 
+bool DefaultVulkanResourceBuilder::buildCannedVertexFormat(VertexFormatID id, VertexFormatRecord& record) {
+	return false;
+}
+
 bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) {
 	bool hasVertex = false, hasFragment = false, hasCompute = false;
 
@@ -105,8 +109,12 @@ bool DefaultVulkanResourceBuilder::buildMaterial(const MaterialDesc& desc, const
 }
 
 bool DefaultVulkanResourceBuilder::buildGeometry(const GeometryDesc& desc, GeometryRecord& geometry,
-	GeometryAllocation& outAllocation) {
+	GeometryAllocation& allocation) {
 	throw std::runtime_error("Not implemented");
+}
+
+bool DefaultVulkanResourceBuilder::buildVertexFormat(const VertexFormatDesc& desc, VertexFormatRecord& record) {
+	return false;
 }
 
 void DefaultVulkanResourceBuilder::destroyTechnique(TechniqueRecord& technique) {
@@ -132,6 +140,10 @@ void DefaultVulkanResourceBuilder::destroyMaterial(MaterialRecord& material) {
 
 void DefaultVulkanResourceBuilder::destroyGeometry(GeometryRecord& geometry, GeometryAllocation& allocation) {
 	throw std::runtime_error("Not implemented");
+}
+
+void DefaultVulkanResourceBuilder::destroyVertexFormat(VertexFormatRecord& record) {
+	
 }
 
 bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const TechniqueRecord& technique) {
