@@ -1,5 +1,6 @@
 #pragma once
 
+#include "physical_device.h"
 #include "physical_device_selector.h"
 
 namespace ember::vulkan {

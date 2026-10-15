@@ -1,11 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-
 #include <optional>
-#include <memory>
 
-#include "../vulkan_defs.h"
+#include "physical_device.h"
 
 namespace ember::vulkan {
 
@@ -26,7 +23,5 @@ public:
      */
     virtual std::optional<PhysicalDevicePtr> select(const PhysicalDevices& candidates) = 0;
 };
-
-using PhysicalDeviceSelectorPtr = std::unique_ptr<PhysicalDeviceSelector>;
 
 } // namespace ember::vulkan

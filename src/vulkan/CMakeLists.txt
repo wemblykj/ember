@@ -48,6 +48,7 @@ target_sources(ember_vulkan PUBLIC
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
         vulkan_defs.h
+        context/physical_device.h
         context/vulkan_instance.h
         context/scoped_vulkan_instance.h
         context/vulkan_context.h

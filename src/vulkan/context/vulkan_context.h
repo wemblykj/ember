@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "vulkan_defs.h"
+#include "physical_device.h"
 #include "vulkan_instance.h"
 #include "resources/vulkan_resource_defs.h"
 

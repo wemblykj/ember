@@ -43,17 +43,17 @@ bool VulkanContextVma::initialize(const PhysicalDevicePtr& physicalDevice) {
         }
 
         // Create one time command pool
-        VkResult result = createCommandPool(graphicsQueueFamily_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandPool_);
+        VkResult result = createCommandPool(graphicsQueueFamilyIndex_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandPool_);
         if (result != VK_SUCCESS) {
             EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
             return false;
         }
 
         physicalDevice_ = physicalDevice;
-        graphicsQueueFamily_ = physicalDevice->traits.queueFamily;
+        graphicsQueueFamilyIndex_ = physicalDevice->traits.queueFamilies.front().queueFamilyIndex;
 
         // Get graphics queue
-        vkGetDeviceQueue(device_, graphicsQueueFamily_, 0, &graphicsQueue_);
+        vkGetDeviceQueue(device_, graphicsQueueFamilyIndex_, 0, &graphicsQueue_);
 
         initialized_ = true;
 
@@ -88,7 +88,7 @@ void VulkanContextVma::destroy() {
 
     physicalDevice_ = VK_NULL_HANDLE;
     graphicsQueue_ = VK_NULL_HANDLE;
-    graphicsQueueFamily_ = 0;
+    graphicsQueueFamilyIndex_ = 0;
 
     initialized_ = false;
 
@@ -263,7 +263,7 @@ bool VulkanContextVma::createLogicalDevice(const PhysicalDevicePtr& physicalDevi
     float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo queueCreateInfo{};
     queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = graphicsQueueFamily_;
+    queueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex_;
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = &queuePriority;
 

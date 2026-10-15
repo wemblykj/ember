@@ -12,6 +12,4 @@ private:
 	std::optional<PhysicalDevicePtr> select(const PhysicalDevices& candidates) override;
 };
 
-PhysicalDeviceSelectorPtr createAnyPhysicalDeviceSelector();
-
 } // namespace ember::vulkan

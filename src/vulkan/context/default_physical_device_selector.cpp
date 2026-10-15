@@ -1,22 +1,25 @@
 #include "default_physical_device_selector.h"
 
 #include <algorithm>
+#include <bit>
+#include <ranges>
 
 namespace ember::vulkan {
-	DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::allowDeviceTypes(std::initializer_list<VkPhysicalDeviceType> types) {
-		allowedDeviceTypes_.insert(types.begin(), types.end());
 
-		return *this;
-	}
+DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::allowDeviceTypes(std::initializer_list<VkPhysicalDeviceType> types) {
+	allowedDeviceTypes_.insert(types.begin(), types.end());
 
-	DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::preferDeviceType(VkPhysicalDeviceType type, int weight)
-	{
-		preferredDeviceTypes_[type] = weight;
+	return *this;
+}
 
-		return *this;
-	}
+DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::preferDeviceType(VkPhysicalDeviceType type, int weight)
+{
+	preferredDeviceTypes_[type] = weight;
 
-	DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::requireExtensions(ExtensionSet extensions) {
+	return *this;
+}
+
+DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::requireExtensions(ExtensionSet extensions) {
 	for (const auto& ext : extensions) {
 		requiredExtensions_.insert(ext);
 	}
@@ -25,15 +28,41 @@ namespace ember::vulkan {
 
 DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::preferExtensions(ExtensionSet extensions, int weight) {
 	for (const auto& ext : extensions) {
-		preferredExtensions_.insert({ext, weight});
+		preferredExtensions_.insert({ ext, weight });
 	}
 	return *this;
 }
 
+DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::requireFeatures(const VkPhysicalDeviceFeatures& features)
+{
+	const VkBool32* requireFeatures = reinterpret_cast<const VkBool32*>(&features);
+	constexpr auto MaxFeatureCount = sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32);
+	for (int i = 0; i < MaxFeatureCount; ++i) {
+		if (requireFeatures[i] == VK_TRUE) {
+			requiredFeatureIndices_.insert(i);
+		}
+	}
+
+	return *this;
+}
+
+DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::preferFeatures(const VkPhysicalDeviceFeatures& features, int weight)
+{
+	const VkBool32* requireFeatures = reinterpret_cast<const VkBool32*>(&features);
+	constexpr auto MaxFeatureCount = sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32);
+	for (int i = 0; i < MaxFeatureCount; ++i) {
+		if (requireFeatures[i] == VK_TRUE) {
+			preferredFeatureIndexWeights_.insert({ i, weight });
+		}
+	}
+
+	return *this;
+}
+
 DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::requireSurfaceSupport(VkSurfaceKHR surface)
-{ 
-	requiredSurfaceSupport_ = surface; 
-	return *this; 
+{
+	requiredSurfaceSupport_ = surface;
+	return *this;
 }
 
 int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& candidate, PhysicalDeviceTraits& effectiveTraits)
@@ -50,108 +79,156 @@ int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& ca
 		return -1; // Candidate is in the disallowed device types
 	}
 
-	if (!requiredFeatures_.empty()) {
-		for (const auto& feature : requiredFeatures_) {
-			if (memcmp(&candidate->traits.features, &feature, sizeof(VkPhysicalDeviceFeatures)) != 0) {
-				return -1; // Candidate does not support the required features
-			}
-		}
-	}
+	if (!requiredFeatureIndices_.empty()) {
+		const VkBool32* deviceFeatures = reinterpret_cast<const VkBool32*>(&candidate->traits.features);
+		VkBool32* enabledFeatures = reinterpret_cast<VkBool32*>(&effectiveTraits.features);
 
-	if (!requiredQueueFlags_.empty() && (candidate->traits.queueFamily & *requiredQueueFlags_.begin()) != *requiredQueueFlags_.begin()) {
-		return -1; // Candidate does not support the required queue flags
+		for (const auto& featureIndex : requiredFeatureIndices_) {
+			if (deviceFeatures[featureIndex] == VK_FALSE) {
+				return -1; // Candidate does not support the required feature
+			}
+
+			enabledFeatures[featureIndex] = VK_TRUE; // Enable the required feature in the effective traits
+		}
 	}
 
 	if (!requiredExtensions_.empty()) {
-		for (const auto& ext : requiredExtensions_) {
-			if (candidate->traits.extensions.find(ext) == candidate->traits.extensions.end()) {
+		for (const auto& extension : requiredExtensions_) {
+			if (candidate->traits.extensions.find(extension) == candidate->traits.extensions.end()) {
 				return -1; // Candidate does not support the required extensions
 			}
-		}
-	}
-	if (requiredSurfaceSupport_ != VK_NULL_HANDLE) {
-		VkBool32 presentSupport = VK_FALSE;
-		vkGetPhysicalDeviceSurfaceSupportKHR(candidate->handle, candidate->traits.queueFamily, requiredSurfaceSupport_, &presentSupport);
-		if (presentSupport == VK_FALSE) {
-			return -1; // Candidate does not support presentation on the given surface
+
+			effectiveTraits.extensions.insert(extension);
 		}
 	}
 
-	int totalScore = 0;
-	int totalWeight = 0;
+	std::list<QueueFamilyTraits> candidateQueueFamilies(candidate->traits.queueFamilies.begin(), candidate->traits.queueFamilies.end());
+
+	if (requiredQueueFlags_.has_value()) {
+		const auto& requiredQueueFlags = *requiredQueueFlags_;
+		for (auto queueFamily : candidate->traits.queueFamilies) {
+			if (queueFamily.queueCount == 0 ||
+				(queueFamily.flags & requiredQueueFlags) != requiredQueueFlags) {
+					std::ranges::remove_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
+						return qf.queueFamilyIndex == queueFamily.queueFamilyIndex;
+					}); // Candidate does not support the required queue flags
+				}
+		}
+
+		if (candidateQueueFamilies.empty()) {
+			return -1; // Candidate does not support the required queue flags
+		}
+	}
+
+	if (requiredSurfaceSupport_ != VK_NULL_HANDLE) {
+		for (const auto queueFamily : candidateQueueFamilies) {
+			if (queueFamily.queueCount == 0)
+				continue; // Candidate does not have any queues in this family
+			VkBool32 presentSupport = VK_FALSE;
+			vkGetPhysicalDeviceSurfaceSupportKHR(candidate->handle, queueFamily.queueFamilyIndex, requiredSurfaceSupport_, &presentSupport);
+			if (presentSupport == VK_FALSE) {
+				std::ranges::remove_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
+					return qf.queueFamilyIndex == queueFamily.queueFamilyIndex;
+					}); // Candidate does not support presentation on the given surface
+			}
+		}
+
+		if (candidateQueueFamilies.empty()) {
+			return -1; // No candidate supports presentation on the given surface
+		}
+	}
+
+	int deviceScore = 0;
 
 	const auto preferredDeviceTypeIt = preferredDeviceTypes_.find(candidate->traits.properties.deviceType);
 	if (preferredDeviceTypeIt != preferredDeviceTypes_.end()) {
 		const auto& weight = preferredDeviceTypeIt->second;
 
-		totalScore += weight;
-		totalWeight += weight;
+		deviceScore += weight;
 	}
 	
 	const auto preferredVendorIt = preferredVendors_.find(candidate->traits.properties.vendorID);
 	if (preferredVendorIt != preferredVendors_.end()) {
 		const auto& weight = preferredVendorIt->second;
 
-		totalScore += weight;
-		totalWeight += weight;
+		deviceScore += weight;
 	}
 
-	constexpr size_t NumFeatures = sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32);
-	for (const auto& entry : preferredFeaturesSets_) {
-		const auto& featureSet = entry.first;
-		const auto& setWeight = entry.second;
-		
+	if (!preferredFeatureIndexWeights_.empty()) {
+		const int preferredFeaturesCount = preferredFeatureIndexWeights_.size();
+
 		const VkBool32* deviceFeatures = reinterpret_cast<const VkBool32*>(&candidate->traits.features);
-		const VkBool32* preferredFeatures = reinterpret_cast<const VkBool32*>(&featureSet);
 		VkBool32* enabledFeatures = reinterpret_cast<VkBool32*>(&effectiveTraits.features);
-		for (int i = 0; i < NumFeatures; ++i) {
-			if (preferredFeatures[i] == VK_TRUE && deviceFeatures[i] == VK_TRUE) {
-				totalScore += setWeight;
-				totalWeight += setWeight;
+		
+		int totalFeaturesScore = 0;
 
-				enabledFeatures[i] = VK_TRUE;
+		for (const auto& entry : preferredFeatureIndexWeights_) {
+			const auto& featureIndex = entry.first;
+			const auto& featureWeight = entry.second;
+
+			if (deviceFeatures[featureIndex] == VK_TRUE) {
+				enabledFeatures[featureIndex] = VK_TRUE;
+				totalFeaturesScore += featureWeight;
 			}
 		}
+
+		deviceScore += totalFeaturesScore / preferredFeaturesCount;
 	}
 	
-	for (const auto& deviceExtension : candidate->traits.extensions) {
-		const auto preferredExtensionIt = preferredExtensions_.find(deviceExtension);
-		if (preferredExtensionIt != preferredExtensions_.end()) {
-			const auto& extension = preferredExtensionIt->first;
-			const auto& weight = preferredExtensionIt->second;
-
-			totalScore += weight;
-			totalWeight += weight;
-
-			effectiveTraits.extensions.insert(extension);
-		}
-	}
-	
-	for (const auto& entry : preferredQueueFlagsSets_) {
-		const auto& preferredFeatureSet = entry.first;
-		const auto& setWeight = entry.second;
-
-		uint32_t overlappedFeatures = candidate->traits.queueFamily & preferredFeatureSet;
-		effectiveTraits.queueFamily |= overlappedFeatures;
-		do {
-			if (overlappedFeatures & 1) {
-				totalScore += setWeight;
-				totalWeight += setWeight;
+	if (!preferredExtensions_.empty()) {
+		const int preferredExtensionsCount = preferredExtensions_.size();
+		int totalExtensionsScore = 0;
+		for (const auto& entry : preferredExtensions_) {
+			const auto& extension = entry.first;
+			const auto& weight = entry.second;
+			if (candidate->traits.extensions.find(extension) != candidate->traits.extensions.end()) {
+				totalExtensionsScore += weight;
+				effectiveTraits.extensions.insert(extension);
 			}
-		} while (overlappedFeatures >> 1);
+		}
+		deviceScore += totalExtensionsScore / preferredExtensionsCount;
 	}
+	
+	/*
+	if (!preferredQueueFlagsSets_.empty()) {
+		std::list<std::pair<int, QueueFamilyTraits>> preferredQueueFamilies;
+		const int preferredQueueFamilyCount = preferredQueueFlagsSets_.size();
+		int totalQueueFamilyScore = 0;
+		for (const auto& entry : preferredQueueFlagsSets_) {
+			const auto& preferredQueueFlags = entry.first;
+			const auto& weight = entry.second;
+			int queueFamilyScore = 0;
+			for (const auto queueFamily : candidateQueueFamilies) {
+				if (queueFamily.queueCount == 0)
+					continue; // Candidate does not have any queues in this family
+
+				if ((queueFamily.flags & preferredQueueFlags) == preferredQueueFlags) {
+					
+					queueFamilyScore += weight;
+					preferredQueueFamilies.emplace_back(weight, queueFamily);
+					break; // Found a matching queue family, no need to check further
+				}
+			}
+		}
+
+		std::ranges::sort(preferredQueueFamilies, std::greater{}, [](const auto& f) { return f.first; });
+
+
+		totalScore += totalQueueFamilyScore / preferredQueueFamilyCount;
+	else {			// If no preferred queue families add all candidate queue families to the effective traits
+		for (const auto queueFamily : candidateQueueFamilies) {
+			effectiveTraits.queueFamilies.push_back(queueFamily);
+		}
+	}*/
 
 	for (const auto& entry : customScorers_) {
 		const CustomScorerFn& customScorer = entry.first;
 		const auto& weight = entry.second;
 
-		totalScore += customScorer(candidate, effectiveTraits) * weight;
-		totalWeight += weight;
+		deviceScore += customScorer(candidate, effectiveTraits) * weight;
 	}
 
-	const auto score = totalScore / totalWeight;
-	
-	return score;
+	return deviceScore;
 }
 
 DefaultPhysicalDeviceSelectorPtr createDefaultPhysicalDeviceSelector()

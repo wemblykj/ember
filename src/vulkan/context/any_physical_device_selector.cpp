@@ -11,9 +11,4 @@ namespace ember::vulkan {
 	return candidates.front();
 }
 
-PhysicalDeviceSelectorPtr createAnyPhysicalDeviceSelector()
-{
-	return std::move(std::make_unique<AnyPhysicalDeviceSelector>());
-}
-
 } // namespace ember::vulkan

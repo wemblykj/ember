@@ -41,29 +41,4 @@ RankedPhysicalDeviceSelector::RankedCandidates RankedPhysicalDeviceSelector::enu
 	return selectionCandidates;
 }
 
-/*
-RankedPhysicalDeviceSelector::PhysicalDeviceCandidate RankedPhysicalDeviceSelector::toCandidate(PhysicalDeviceInfo deviceInfo) {
-	
-	const auto& device = deviceInfo.physicalDevice;
-
-	PhysicalDeviceCandidate result{ .physicalDevice = device };
-
-	vkGetPhysicalDeviceProperties(device, &result.properties);
-
-	vkGetPhysicalDeviceFeatures(device, &result.features);
-
-	uint32_t extensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-	if (extensionCount > 0) {
-		std::vector<VkExtensionProperties> available(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, available.data());
-
-		std::ranges::transform(available, std::inserter(result.extensions, result.extensions.end()),
-			[](const VkExtensionProperties& ext) { return ext.extensionName; });
-	}
-	
-	return result;
-}*/
-
 } // namespace ember::vulkan

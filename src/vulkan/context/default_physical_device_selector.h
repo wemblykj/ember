@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 
+#include "physical_device.h"
 #include "ranked_physical_device_selector.h"
 
 namespace ember::vulkan {
@@ -66,9 +67,9 @@ private:
 	std::set<VkPhysicalDeviceType> allowedDeviceTypes_;
 	std::set<VkPhysicalDeviceType> disallowedDeviceTypes_;
 	std::map<VkPhysicalDeviceType, int> preferredDeviceTypes_;
-	std::set<VkPhysicalDeviceFeatures> requiredFeatures_;
-	std::vector<std::pair<VkPhysicalDeviceFeatures, int>> preferredFeaturesSets_;
-	std::set<VkQueueFlags> requiredQueueFlags_;
+	std::set<int> requiredFeatureIndices_;
+	std::map<int, int> preferredFeatureIndexWeights_;
+	std::optional<VkQueueFlags> requiredQueueFlags_;
 	std::map<VkQueueFlags, int> preferredQueueFlagsSets_;
 	ExtensionSet requiredExtensions_;
 	std::map<std::string, int> preferredExtensions_;
