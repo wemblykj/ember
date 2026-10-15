@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <resources.h>
+#include <resource_types.h>
 
 #include "../vulkan_defs.h"
 

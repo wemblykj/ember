@@ -115,7 +115,26 @@ void VulkanResourceCache::releaseResourceGroup(ResourceGroupID group) {
 
 bool VulkanResourceCache::assertTechnique(TechniqueID id)
 {
-    return techniques_.contains(id);
+    if (techniques_.contains(id)) {
+        return true;
+    }
+    
+    if (id < BuiltinTechnique::Custom) {
+        EMBER_LOG_WARN("Technique ID {} is not registered. Returning default technique.", id);
+        
+        TechniqueRecord technique{};
+        if (compiler_->buildCannedTechnique(id, technique)) {
+            addTechnique(BuiltinResourceGroup::Global, id, technique);
+		}
+		else {
+            EMBER_LOG_ERROR("Failed to compile canned technique '{}'", id);
+		}
+        
+    } else {
+        EMBER_LOG_WARN("Technique ID {} is not registered. Returning unassigned technique.", id);
+	}
+    
+    return false;
 }
 
 bool VulkanResourceCache::assertMaterial(MaterialID id)
@@ -130,14 +149,15 @@ bool VulkanResourceCache::assertGeometry(GeometryID id)
 
 TechniqueID VulkanResourceCache::registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) {
     TechniqueID id = nextTechniqueId_++;
-    TechniqueEntry entry;
-    entry.group = group;
-    if (!compiler_->buildTechnique(desc, entry.record)) {
+    
+    TechniqueRecord record;
+    if (!compiler_->buildTechnique(desc, record)) {
         EMBER_LOG_ERROR("Failed to compile technique '{}'", desc.name);
         return BuiltinTechnique::Opaque; // or an error sentinel
     }
-    techniques_[id] = std::move(entry);
-    groupMembers_[group].techniques.push_back(id);
+    
+    addTechnique(group, id, record);
+
     return id;
 }
 
@@ -149,28 +169,30 @@ MaterialID VulkanResourceCache::registerMaterial(const MaterialDesc& desc, Resou
 
 	auto technique = ResolveTechnique(desc.technique);
 
-    MaterialEntry entry;
-    entry.group = group;
-    if (!compiler_->buildMaterial(desc, technique, entry.record)) {
+	MaterialRecord record;
+    if (!compiler_->buildMaterial(desc, technique, record)) {
         EMBER_LOG_ERROR("Failed to compile material '{}'", desc.name);
         return invalidMaterialId_;
     }
     MaterialID id = nextMaterialId_++;
-    materials_[id] = std::move(entry);
-    groupMembers_[group].materials.push_back(id);
+
+    addMaterial(group, id, record);
+
     return id;
 }
 
 GeometryID VulkanResourceCache::registerGeometry(const GeometryDesc& desc, ResourceGroupID group) {
     GeometryID id = nextGeometryId_++;
-	GeometryEntry entry;
-	entry.group = group;
-    if (!compiler_->buildGeometry(desc, entry.record, entry.allocation)) {
+	
+    GeometryRecord record;
+	GeometryAllocation allocation;
+    if (!compiler_->buildGeometry(desc, record, allocation)) {
         EMBER_LOG_ERROR("Failed to compile geometry");
         return invalidGeometryId_;
 	}
-    geometry_[id] = std::move(entry);
-    groupMembers_[group].geometry.push_back(id);
+
+	addGeometry(group, id, record, allocation);
+
     return id;
 }
 
@@ -258,4 +280,37 @@ void VulkanResourceCache::destroyGeometry(GeometryID id) {
     }
 }
 
+void VulkanResourceCache::addTechnique(ResourceGroupID group, TechniqueID id, TechniqueRecord record)
+{
+    TechniqueEntry entry {
+		{ group },
+        record
+    };
+
+    techniques_[id] = std::move(entry);
+    groupMembers_[group].techniques.push_back(id);
+}
+
+void VulkanResourceCache::addMaterial(ResourceGroupID group, MaterialID id, MaterialRecord record)
+{
+    MaterialEntry entry{
+        { group },
+        record
+    };
+
+    materials_[id] = std::move(entry);
+    groupMembers_[group].materials.push_back(id);
+}
+
+void VulkanResourceCache::addGeometry(ResourceGroupID group, GeometryID id, GeometryRecord record,
+	GeometryAllocation allocation) {
+	GeometryEntry entry{
+		{ group },
+		record,
+		allocation
+	};
+
+	geometry_[id] = std::move(entry);
+	groupMembers_[group].geometry.push_back(id);
+}
 }  // namespace ember::vulkan

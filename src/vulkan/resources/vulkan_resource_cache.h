@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <resources.h>
+#include <resource_types.h>
 #include <resource_cache.h>
 
 #include "../context/vulkan_context.h"
@@ -70,6 +70,10 @@ private:
     void destroyTechnique(TechniqueID id);
     void destroyGeometry(GeometryID id);
 
+    void addTechnique(ResourceGroupID group, TechniqueID id, TechniqueRecord record);
+    void addMaterial(ResourceGroupID group, MaterialID id, MaterialRecord record);
+    void addGeometry(ResourceGroupID group, GeometryID id, GeometryRecord record, GeometryAllocation allocation);
+
 private:
     struct ResourceGroupMembers {
         std::vector<TechniqueID> techniques;
@@ -78,7 +82,7 @@ private:
     };
 
     struct ResourceCacheEntry {
-        ResourceGroupID group = resources::BuiltinResourceGroup::Default;  ///< Owning resource group
+        ResourceGroupID group = resources::BuiltinResourceGroup::Global;  ///< Owning resource group
         std::uint64_t hash = 0;                                 ///< Stable hash of the source desc (0 = not set)
         std::uint32_t refCount = 1;                             ///< Simple reference count
         std::uint64_t lastUsedFrame = 0;                        ///< Last frame index this resource was used on

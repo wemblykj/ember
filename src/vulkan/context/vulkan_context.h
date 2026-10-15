@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <set>
 #include <span>
 
 #include <vulkan/vulkan.h>

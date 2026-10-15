@@ -6,6 +6,7 @@
 
 #include <logger.h>
 #include <resource_file_provider.h>
+#include <default_canned_resource_provider.h>
 
 #include "context/default_physical_device_selector.h"
 #include "context/vulkan_context_vma.h"
@@ -491,7 +492,13 @@ RendererPtr createRenderer(const RendererConfig& config, ResourceFileProviderPtr
     shaderc::CompileOptions compilerOptions;
     auto shaderCompiler = std::make_unique<ShadercVulkanShaderCompiler>(compilerOptions, context, fileProvider);
 
-	auto resourceBuilder = std::make_unique<DefaultVulkanResourceBuilder>(context, std::move(shaderCompiler), fileProvider);
+	auto cannedResourceProvider = std::make_unique<DefaultCannedResourceProvider>();
+
+	auto resourceBuilder = std::make_unique<DefaultVulkanResourceBuilder>(
+		context, 
+		std::move(shaderCompiler), 
+		std::move(cannedResourceProvider), 
+		fileProvider);
 
     ResourceCacheConfig resourceCacheConfig;
     auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceBuilder));

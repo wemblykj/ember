@@ -12,10 +12,37 @@ namespace ember::vulkan {
 DefaultVulkanResourceBuilder::DefaultVulkanResourceBuilder(
 	std::shared_ptr<VulkanContext> context,
 	std::unique_ptr<VulkanShaderCompiler> shaderCompiler,
+	std::unique_ptr<CannedResourceProvider> cannedResourceProvider,
 	std::shared_ptr<ResourceFileProvider> fileProvider)
     : context_(std::move(context))
     , shaderCompiler_(std::move(shaderCompiler	))
+	, cannedResourceProvider_(std::move(cannedResourceProvider))
     , fileProvider_(std::move(fileProvider)) {
+}
+
+bool DefaultVulkanResourceBuilder::buildCannedTechnique(TechniqueID id, TechniqueRecord& technique) {
+	switch (id) {
+	case BuiltinTechnique::Opaque:
+		return buildOpaqueTechnique(technique);
+	case BuiltinTechnique::Transparent:
+		return buildTransparentTechnique(technique);
+	}
+
+	TechniqueDesc descriptor;
+	if (!cannedResourceProvider_->GetTechniqueDescriptor(id, descriptor)) {
+		EMBER_LOG_ERROR("Failed to get descriptor for canned technique ID {}", id);
+		return false;
+	}
+
+	return buildTechnique(descriptor, technique);
+}
+
+bool DefaultVulkanResourceBuilder::buildCannedMaterial(MaterialID id, MaterialRecord& record) {
+	return false;
+}
+
+bool DefaultVulkanResourceBuilder::buildCannedGeometry(GeometryID id, GeometryRecord& record) {
+	return false;
 }
 
 bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) {
@@ -105,6 +132,14 @@ void DefaultVulkanResourceBuilder::destroyMaterial(MaterialRecord& material) {
 
 void DefaultVulkanResourceBuilder::destroyGeometry(GeometryRecord& geometry, GeometryAllocation& allocation) {
 	throw std::runtime_error("Not implemented");
+}
+
+bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const TechniqueRecord& technique) {
+	return false;
+}
+
+bool DefaultVulkanResourceBuilder::buildTransparentTechnique(const TechniqueRecord& technique) {
+	return false;
 }
 
 VkShaderStageFlagBits DefaultVulkanResourceBuilder::toShaderStageFlagBits(ShaderStage stage) {

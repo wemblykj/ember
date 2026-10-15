@@ -4,8 +4,9 @@
 
 #include <memory>
 
-#include <resources.h>
+#include <resource_types.h>
 #include <resource_file_provider.h>
+#include <canned_resource_provider.h>
 
 #include "context/vulkan_context.h"
 #include "vulkan_shader_compiler.h"
@@ -21,7 +22,12 @@ public:
     explicit DefaultVulkanResourceBuilder(
     	std::shared_ptr<VulkanContext> context,
         std::unique_ptr<VulkanShaderCompiler> shaderCompiler,
+        std::unique_ptr<resources::CannedResourceProvider> cannedResourceProvider,
         std::shared_ptr<resources::ResourceFileProvider> fileProvider);
+
+    bool buildCannedTechnique(TechniqueID id, TechniqueRecord& technique) override;
+    bool buildCannedMaterial(MaterialID id, MaterialRecord& record) override;
+    bool buildCannedGeometry(GeometryID id, GeometryRecord& record) override;
 
     bool buildTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) override;
     bool buildMaterial(const MaterialDesc& desc, const TechniqueRecord& technique, MaterialRecord& material) override;
@@ -32,10 +38,14 @@ public:
     void destroyGeometry(GeometryRecord& geometry, GeometryAllocation& allocation) override;
 
 private:
+    bool buildOpaqueTechnique(const TechniqueRecord& technique);
+    bool buildTransparentTechnique(const TechniqueRecord& technique);
+
     static VkShaderStageFlagBits toShaderStageFlagBits(resources::ShaderStage stage);
 
     std::shared_ptr<VulkanContext> context_;
     std::unique_ptr<VulkanShaderCompiler> shaderCompiler_;
+	std::unique_ptr<resources::CannedResourceProvider> cannedResourceProvider_;
     std::shared_ptr<resources::ResourceFileProvider> fileProvider_;
 };
 
