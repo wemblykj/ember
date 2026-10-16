@@ -109,7 +109,7 @@ int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& ca
 		for (auto queueFamily : candidate->traits.queueFamilies) {
 			if (queueFamily.queueCount == 0 ||
 				(queueFamily.flags & requiredQueueFlags) != requiredQueueFlags) {
-					std::ranges::remove_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
+					std::erase_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
 						return qf.queueFamilyIndex == queueFamily.queueFamilyIndex;
 					}); // Candidate does not support the required queue flags
 				}
@@ -127,7 +127,7 @@ int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& ca
 			VkBool32 presentSupport = VK_FALSE;
 			vkGetPhysicalDeviceSurfaceSupportKHR(candidate->handle, queueFamily.queueFamilyIndex, requiredSurfaceSupport_, &presentSupport);
 			if (presentSupport == VK_FALSE) {
-				std::ranges::remove_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
+				std::erase_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
 					return qf.queueFamilyIndex == queueFamily.queueFamilyIndex;
 					}); // Candidate does not support presentation on the given surface
 			}
