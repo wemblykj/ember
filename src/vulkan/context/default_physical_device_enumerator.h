@@ -11,7 +11,13 @@ namespace ember::vulkan {
 
 class DefaultPhysicalDeviceEnumerator : public PhysicalDeviceEnumerator {
 public:
-	std::vector<PhysicalDevicePtr> enumerate(const VulkanInstancePtr& instance) override
+	DefaultPhysicalDeviceEnumerator(const VulkanInstancePtr& instance);
+	std::vector<PhysicalDevicePtr> enumerate() override;
+
+private:
+	PhysicalDevicePtr buiildPhysicalDevice(VkPhysicalDevice device);
+
+	VulkanInstancePtr instance_;
 };
 
 } // namespace ember::vulkan

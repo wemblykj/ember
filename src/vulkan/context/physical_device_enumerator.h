@@ -1,11 +1,8 @@
 #pragma once
 
-#include <optional>
-#include <memory>
 #include <vector>
 
-#include "vulkan_defs.h" 
-#include "vulkan_instance.h" 
+#include "physical_device.h"
 
 namespace ember::vulkan {
 
@@ -22,7 +19,7 @@ public:
         * Enumerate the physical devices available from the given Vulkan instance.
         * @return A list of available candidate devices.
         */
-    virtual std::vector<PhysicalDevicePtr> enumerate(const VulkanInstancePtr& instance) = 0;
+    virtual std::vector<PhysicalDevicePtr> enumerate() = 0;
 };
 
 } // namespace ember::vulkan

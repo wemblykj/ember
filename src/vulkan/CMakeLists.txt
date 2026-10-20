@@ -36,6 +36,7 @@ target_sources(ember_vulkan PRIVATE
     context/vulkan_context_vma.cpp
     context/any_physical_device_selector.cpp
     context/ranked_physical_device_selector.cpp
+    context/default_physical_device_enumerator.cpp
     context/default_physical_device_selector.cpp
     resources/vulkan_resource_cache.cpp
     resources/default_vulkan_resource_builder.cpp

@@ -34,7 +34,7 @@ public:
     VkInstance getNativeInstance() const override { return instance_->get(); }
     VkDevice getDevice() const override { return device_; }
     VkQueue getGraphicsQueue() const override { return graphicsQueue_; }
-    uint32_t getGraphicsQueueFamily() const override { return graphicsQueueFamilyIndex_; }
+    uint32_t getGraphicsQueueFamilyIndex() const override { return graphicsQueueFamilyIndex_; }
 
     VkResult createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, VkCommandPool& pool) override ;
     void destroyCommandPool(VkCommandPool pool) override;
@@ -52,7 +52,7 @@ private:
     VkPipelineCache getPipelineCache() const { return pipelineCache_; }
 
 private:
-    bool createLogicalDevice(const PhysicalDevicePtr& physicalDevice);
+    bool createLogicalDevice();
 	bool createMemoryAllocator();
 
     static VmaAllocation toVma(AllocationHandle handle) {
