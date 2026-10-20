@@ -508,7 +508,8 @@ RendererPtr createRenderer(const RendererConfig& config, ResourceFileProviderPtr
         auto vulkanSurfaceProvider = std::dynamic_pointer_cast<VulkanSurfaceProvider>(surfaceProvider);
 		if (vulkanSurfaceProvider) {
 			auto surfaceExtensions = vulkanSurfaceProvider->getRequiredInstanceExtensions();
-			requiredExtensions.insert(surfaceExtensions.begin(), surfaceExtensions.end());
+			requiredExtensions.insert(surfaceExtensions.begin(),
+                surfaceExtensions.end());
 		}
 		else {
 			EMBER_LOG_ERROR("SurfaceProvider is not a VulkanSurfaceProvider");

@@ -82,6 +82,8 @@ void VulkanContextVma::destroy() {
         return;
     }
 
+    destroyCommandPool(commandPool_);
+
     if (allocator_ != VK_NULL_HANDLE) {
         vmaDestroyAllocator(allocator_);
         allocator_ = VK_NULL_HANDLE;
@@ -92,8 +94,6 @@ void VulkanContextVma::destroy() {
         vkDestroyDevice(device_, nullptr);
         device_ = VK_NULL_HANDLE;
     }
-
-	destroyCommandPool(commandPool_);
 
     physicalDevice_ = VK_NULL_HANDLE;
     graphicsQueue_ = VK_NULL_HANDLE;

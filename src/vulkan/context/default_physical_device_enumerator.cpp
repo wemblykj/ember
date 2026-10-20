@@ -14,7 +14,10 @@ DefaultPhysicalDeviceEnumerator::DefaultPhysicalDeviceEnumerator(const VulkanIns
 
 std::vector<PhysicalDevicePtr> DefaultPhysicalDeviceEnumerator::enumerate() {
 	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(instance_->get(), &deviceCount, nullptr);
+	if (vkEnumeratePhysicalDevices(instance_->get(), &deviceCount, nullptr) != VK_SUCCESS) {
+		EMBER_LOG_ERROR("Failed to enumerate physical devices");
+		return {};
+	}
 
 	if (deviceCount == 0) {
 		EMBER_LOG_ERROR("No physical devices found");
@@ -22,7 +25,10 @@ std::vector<PhysicalDevicePtr> DefaultPhysicalDeviceEnumerator::enumerate() {
 	}
 
 	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(instance_->get(), &deviceCount, devices.data());
+	if (vkEnumeratePhysicalDevices(instance_->get(), &deviceCount, devices.data()) != VK_SUCCESS) {
+		EMBER_LOG_ERROR("Failed to enumerate physical devices");
+		return {};
+	}
 
 	std::vector<PhysicalDevicePtr> physicalDevices;
 	physicalDevices.reserve(deviceCount);
@@ -43,13 +49,15 @@ PhysicalDevicePtr DefaultPhysicalDeviceEnumerator::buiildPhysicalDevice(VkPhysic
 	vkGetPhysicalDeviceFeatures(device, &result->traits.features);
 
 	uint32_t extensionCount = 0;
-	if (!vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr)) {
+	if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr) != VK_SUCCESS) {
 		EMBER_LOG_ERROR("Failed to enumerate device extension properties");
 	}
 
 	if (extensionCount > 0) {
 		std::vector<VkExtensionProperties> available(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, available.data());
+		if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, available.data()) != VK_SUCCESS) {
+			EMBER_LOG_ERROR("Failed to enumerate device extension properties");
+		}
 
 		std::ranges::transform(available, std::inserter(result->traits.extensions, result->traits.extensions.end()),
 			[](const VkExtensionProperties& ext) { return ext.extensionName; });
