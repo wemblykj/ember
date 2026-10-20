@@ -51,7 +51,8 @@ bool VulkanRenderer::initialize(SurfaceProviderPtr surfaceProvider) {
         requiredExtensions.insert(surfaceExtensions.begin(), surfaceExtensions.end());
     }
 
-    auto instance = createVulkanInstance(requiredExtensions);
+    auto instance = context_->getInstance();
+
 	auto deviceEnumerator = std::make_unique<DefaultPhysicalDeviceEnumerator>(instance);
     auto deviceSelector = createDefaultPhysicalDeviceSelector();
 
@@ -136,7 +137,7 @@ void VulkanRenderer::shutdown() {
 
 void VulkanRenderer::aquireNextImage(FrameContext& frame, VkDevice device)
 {
-    VkResult result = vkAcquireNextImageKHR(device, swapchain_, UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &frame.swapchainImageIndex);
+    VkResult result = vkAcquireNextImageKHR(device, swapchain_, 1'000'000'000, frame.imageAvailable, VK_NULL_HANDLE, &frame.swapchainImageIndex);
 
 	if (result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
@@ -151,7 +152,7 @@ void VulkanRenderer::aquireNextImage(FrameContext& frame, VkDevice device)
 
     // If a previous frame is still using this image, wait for it.
     if (imagesInFlight_[frame.swapchainImageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(device, 1, &imagesInFlight_[frame.swapchainImageIndex], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(device, 1, &imagesInFlight_[frame.swapchainImageIndex], VK_TRUE, 1'000'000'000);
     }
 
     imagesInFlight_[frame.swapchainImageIndex] = frame.inFlightFence;
@@ -162,7 +163,7 @@ void VulkanRenderer::beginFrame() {
 
     auto device = context_->getDevice();
 
-    vkWaitForFences(device, 1, &frame.inFlightFence, VK_TRUE, UINT64_MAX);
+    auto result = vkWaitForFences(device, 1, &frame.inFlightFence, VK_TRUE, 1'000'000'000);
     vkResetFences(device, 1, &frame.inFlightFence);
 
     // request image from the swapchain
@@ -404,6 +405,7 @@ bool VulkanRenderer::createFrameResources()
     };
 
     frames_.resize(framesInFlight_);
+    VkResult result;
     for (uint32_t i = 0; i < framesInFlight_; ++i) {
         FrameContext& frame = frames_[i];
         // Create a resettable per-frame command pool via VulkanContext helper
@@ -413,9 +415,9 @@ bool VulkanRenderer::createFrameResources()
         context_->allocateCommandBuffers(frame.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &frame.commandBuffer);
 
         // Create fence and semaphores (renderer creates/destroys these)
-        vkCreateFence(device, &fenceCreateInfo, nullptr, &frame.inFlightFence);
-        vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.imageAvailable);
-        vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.renderFinished);
+        result = vkCreateFence(device, &fenceCreateInfo, nullptr, &frame.inFlightFence);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.imageAvailable);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.renderFinished);
     }
 
     return true;
@@ -500,7 +502,21 @@ uint32_t VulkanRenderer::chooseSurfaceImageCount(VkSurfaceCapabilitiesKHR capabi
 }
 
 RendererPtr createRenderer(const RendererConfig& config, ResourceFileProviderPtr fileProvider, SurfaceProviderPtr surfaceProvider) {
-    auto instance = createVulkanInstance();
+
+	ExtensionSet requiredExtensions;
+    if (surfaceProvider) {
+        auto vulkanSurfaceProvider = std::dynamic_pointer_cast<VulkanSurfaceProvider>(surfaceProvider);
+		if (vulkanSurfaceProvider) {
+			auto surfaceExtensions = vulkanSurfaceProvider->getRequiredInstanceExtensions();
+			requiredExtensions.insert(surfaceExtensions.begin(), surfaceExtensions.end());
+		}
+		else {
+			EMBER_LOG_ERROR("SurfaceProvider is not a VulkanSurfaceProvider");
+			return nullptr;
+		}
+    }
+
+    auto instance = createVulkanInstance(requiredExtensions);
     auto context = std::make_shared<VulkanContextVma>(instance);
 
     shaderc::CompileOptions compilerOptions;
