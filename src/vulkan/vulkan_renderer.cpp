@@ -167,7 +167,7 @@ void VulkanRenderer::beginFrame() {
 }
 
 void VulkanRenderer::submitPass(const RendererPass& pass) {
-	MaterialID currentMaterial = BuiltinMaterial::Undefined;
+	MaterialID currentMaterial = CannedMaterial::Undefined;
 
     for (const auto& packet : pass.queue) {
         if (packet.materialId != currentMaterial) {
@@ -497,11 +497,14 @@ RendererPtr createRenderer(const RendererConfig& config, ResourceFileProviderPtr
 	auto resourceBuilder = std::make_unique<DefaultVulkanResourceBuilder>(
 		context, 
 		std::move(shaderCompiler), 
-		std::move(cannedResourceProvider), 
 		fileProvider);
 
     ResourceCacheConfig resourceCacheConfig;
-    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceBuilder));
+    auto resourceCache = std::make_shared<VulkanResourceCache>(
+        resourceCacheConfig, 
+        context, 
+        std::move(resourceBuilder),
+        std::move(cannedResourceProvider));
 
     auto renderer = std::make_unique<VulkanRenderer>(config, context, resourceCache);
     if (renderer->initialize(surfaceProvider)) {

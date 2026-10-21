@@ -49,7 +49,7 @@ struct TechniqueRecord {
     * and per-frame descriptor sets used for binding material parameters.
     */
 struct MaterialRecord {
-    resources::TechniqueID technique = resources::BuiltinTechnique::Opaque;       ///< Technique this material uses
+    resources::TechniqueID technique = resources::CannedTechnique::Opaque;       ///< Technique this material uses
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE; ///< Descriptor set layout
     std::vector<VkDescriptorSet> descriptorSetsPerFrame;    ///< Descriptor sets sized to frames-in-flight
     std::uint32_t dynamicOffsetCount = 0;                   ///< Number of dynamic offsets required

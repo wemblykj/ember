@@ -20,9 +20,9 @@ namespace ember::resources {
 bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, TechniqueDesc& desc) {
 	switch (id)
 	{
-		case BuiltinTechnique::Invalid:
-		case BuiltinTechnique::Undefined:
-		case BuiltinTechnique::Opaque:
+		case CannedTechnique::Invalid:
+		case CannedTechnique::Undefined:
+		case CannedTechnique::Opaque:
 			desc.name = "canned.technique.opaque";
 			desc.blendMode = core::BlendMode::Opaque;
 			desc.cullMode = core::CullMode::Back;
@@ -33,7 +33,7 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 			desc.shaderStages.push_back({ ShaderStage::Fragment, "main", "shaders/canned/opaque.frag" });
 			return true;
 
-		case BuiltinTechnique::Transparent:
+		case CannedTechnique::Transparent:
 			desc.name = "canned.technique.transparent";
 			desc.blendMode = core::BlendMode::AlphaBlend;
 			desc.cullMode = core::CullMode::Back;
@@ -53,14 +53,14 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 bool DefaultCannedResourceProvider::GetMaterialDescriptor(MaterialID id, MaterialDesc& desc) {
 	switch (id)
 	{
-		case BuiltinMaterial::Invalid:
+		case CannedMaterial::Invalid:
 			desc.name = "canned.material.invalid";
-			desc.technique = BuiltinTechnique::Invalid;
+			desc.technique = CannedTechnique::Invalid;
 			return true;
 
-		case BuiltinMaterial::Undefined:
+		case CannedMaterial::Undefined:
 			desc.name = "canned.material.undefined";
-			desc.technique = BuiltinTechnique::Undefined;
+			desc.technique = CannedTechnique::Undefined;
 			return true;
 
 		default:
@@ -72,24 +72,24 @@ bool DefaultCannedResourceProvider::GetMaterialDescriptor(MaterialID id, Materia
 bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, GeometryDesc& desc) {
 	switch (id)
 	{
-		case BuiltinGeometry::Invalid:
+		case CannedGeometry::Invalid:
 			desc.name = "canned.geometry.invalid";
 			//desc.vertexData;
 			//desc.indexData;
 			desc.indexCount = 0;
-			desc.vertexFormat = BuiltinVertexFormat::Undefined;
+			desc.vertexFormat = CannedVertexFormat::Undefined;
 			return true;
 
-		case BuiltinGeometry::Undefined:
+		case CannedGeometry::Undefined:
 			desc.name = "canned.geometry.undefined";
 			//desc.vertexData;
 			//desc.indexData;
 			desc.indexCount = 0;
 			desc.indexType = IndexType::Undefined;
-			desc.vertexFormat = BuiltinVertexFormat::Undefined;
+			desc.vertexFormat = CannedVertexFormat::Undefined;
 			return true;
 
-		case BuiltinGeometry::UnitQuad:
+		case CannedGeometry::UnitQuad:
 			// Provide vertex and index data for a unit quad
 			// This is just an example; actual data would be filled in here
 			desc.name = "canned.geometry.unit_quad";
@@ -98,7 +98,7 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 			desc.indexData = std::as_bytes(std::span(kUnitQuadIndices));
 			desc.indexCount = static_cast<uint16_t>(std::size(kUnitQuadIndices));
 			desc.indexType = IndexType::UInt16;
-			desc.vertexFormat = BuiltinVertexFormat::PositionUV;
+			desc.vertexFormat = CannedVertexFormat::PositionUV;
 			return true;
 		default:
 			break;
@@ -109,11 +109,11 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id, VertexFormatDesc& desc) {
 	switch (id)
 	{
-		case BuiltinVertexFormat::Undefined:
+		case CannedVertexFormat::Undefined:
 			desc.stride = 0;
 			desc.attributes.clear();
 			return true;
-		case BuiltinVertexFormat::PositionUV:
+		case CannedVertexFormat::PositionUV:
 			desc.name = "canned.vertex_format.position_uv";
 			desc.stride = sizeof(QuadVertex);
 			desc.attributes = {
@@ -124,6 +124,8 @@ bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id,
 		default:
 			break;
 	}
+
+	return false;
 }
 
 } // namespace ember::resources

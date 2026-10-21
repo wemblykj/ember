@@ -2,16 +2,20 @@
 
 #include <logger.h>
 
+#include "canned_resource_provider.h"
+
 using namespace ember::resources;
 
 namespace ember::vulkan {
 
 VulkanResourceCache::VulkanResourceCache(const ResourceCacheConfig& config, 
 	std::shared_ptr<VulkanContext> context,
-    std::unique_ptr<VulkanResourceBuilder> compiler)
+    std::unique_ptr<VulkanResourceBuilder> resourceBuilder,
+    std::unique_ptr<CannedResourceProvider> cannedResourceProvider)
     : config_(config)
 	, context_(context)
-	, resourceBuilder_(std::move(compiler))
+	, resourceBuilder_(std::move(resourceBuilder))
+    , cannedResourceProvider_(std::move(cannedResourceProvider))
 {
 }
 
@@ -21,15 +25,15 @@ VulkanResourceCache::~VulkanResourceCache() {
 
 const TechniqueRecord& VulkanResourceCache::ResolveTechnique(TechniqueID id)
 {
-    if (id == BuiltinTechnique::Undefined) {
+    if (id == CannedTechnique::Undefined) {
         EMBER_LOG_WARN("Technique ID {} is undefined. Returning default technique.", id);
-        return techniques_[BuiltinTechnique::Undefined].record;
+        return techniques_[CannedTechnique::Undefined].record;
 	}
 
 	const auto it = techniques_.find(id);
     if (it == techniques_.end()) {
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning default technique.", id);
-        return techniques_[BuiltinTechnique::Undefined].record;
+        return techniques_[CannedTechnique::Undefined].record;
     }
 
     return it->second.record;
@@ -37,7 +41,7 @@ const TechniqueRecord& VulkanResourceCache::ResolveTechnique(TechniqueID id)
 
 const MaterialRecord& VulkanResourceCache::ResolveMaterial(MaterialID id)
 {
-    if (id == BuiltinMaterial::Undefined) {
+    if (id == CannedMaterial::Undefined) {
         EMBER_LOG_WARN("Material ID {} is undefined. Returning unassigned material.", id);
         return materials_[unassignedMaterialId_].record;
 	}
@@ -53,30 +57,30 @@ const MaterialRecord& VulkanResourceCache::ResolveMaterial(MaterialID id)
 
 const GeometryRecord& VulkanResourceCache::ResolveGeometry(GeometryID id)
 {
-    if (id == BuiltinGeometry::Undefined) {
+    if (id == CannedGeometry::Undefined) {
         EMBER_LOG_WARN("Geometry ID {} is undefined. Returning default geometry.", id);
-        return geometry_[BuiltinGeometry::Undefined].record;
+        return geometry_[CannedGeometry::Undefined].record;
     }
 
 	const auto it = geometry_.find(id);
     if (it == geometry_.end()) {
         EMBER_LOG_WARN("Geometry ID {} is not registered. Returning default geometry.", id);
-        return geometry_[BuiltinGeometry::Undefined].record;
+        return geometry_[CannedGeometry::Undefined].record;
     }
 
     return it->second.record;
 }
 
 const VertexFormatRecord& VulkanResourceCache::ResolveVertexFormat(VertexFormatID id) {
-    if (id == BuiltinVertexFormat::Undefined) {
+    if (id == CannedVertexFormat::Undefined) {
         EMBER_LOG_WARN("VertexFormat ID {} is undefined. Returning default vertex format.", id);
-        return vertexFormats_[BuiltinVertexFormat::Undefined].record;
+        return vertexFormats_[CannedVertexFormat::Undefined].record;
     }
 
 	const auto it = vertexFormats_.find(id);
     if (it == vertexFormats_.end()) {
         EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning default vertex format.", id);
-        return vertexFormats_[BuiltinVertexFormat::Undefined].record;
+        return vertexFormats_[CannedVertexFormat::Undefined].record;
     }
 	return it->second.record;
 }
@@ -95,11 +99,11 @@ void VulkanResourceCache::clearAllResources() {
     vertexFormats_.clear();
     groupMembers_.clear();
     groupNames_.clear();
-    nextGroupId_ = BuiltinResourceGroup::Custom;
-    nextTechniqueId_ = BuiltinTechnique::Custom;
-    nextMaterialId_ = BuiltinMaterial::Custom;
-    nextGeometryId_ = BuiltinGeometry::Custom;
-    nextVertexFormatId_ = BuiltinVertexFormat::Custom;
+    nextGroupId_ = CannedResourceGroup::Custom;
+    nextTechniqueId_ = CannedTechnique::Custom;
+    nextMaterialId_ = CannedMaterial::Custom;
+    nextGeometryId_ = CannedGeometry::Custom;
+    nextVertexFormatId_ = CannedVertexFormat::Custom;
 }
 
 ResourceGroupID VulkanResourceCache::createResourceGroup(const ResourceGroupDesc& desc) {
@@ -128,17 +132,26 @@ bool VulkanResourceCache::assertTechnique(TechniqueID id)
         return true;
     }
     
-    if (id < BuiltinTechnique::Custom) {
+    if (id < CannedTechnique::Custom) {
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning default technique.", id);
         
         TechniqueRecord technique{};
-        if (resourceBuilder_->buildCannedTechnique(id, technique)) {
-            addTechnique(BuiltinResourceGroup::Global, id, technique);
+        if (!resourceBuilder_->buildCannedTechnique(id, technique)) {
+            TechniqueDesc descriptor;
+            if (!cannedResourceProvider_->GetTechniqueDescriptor(id, descriptor)) {
+                EMBER_LOG_ERROR("Failed to get descriptor for canned technique ID {}", id);
+                return false;
+            }
 
-            return true;
+            if (!resourceBuilder_->buildTechnique(descriptor, technique)) {
+                EMBER_LOG_ERROR("Failed to build technique '{}'", descriptor.name);
+                return false;
+			}
 		}
 		
-    	EMBER_LOG_ERROR("Failed to compile canned technique '{}'", id);
+        addTechnique(CannedResourceGroup::Global, id, technique);
+        return true;
+    	
     } else {
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning unassigned technique.", id);
 	}
@@ -161,12 +174,12 @@ bool VulkanResourceCache::assertVertexFormat(VertexFormatID id) {
         return true;
     }
 
-    if (id < BuiltinVertexFormat::Custom) {
+    if (id < CannedVertexFormat::Custom) {
         EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning default vertex format.", id);
 
         VertexFormatRecord vertexFormat{};
         if (resourceBuilder_->buildCannedVertexFormat(id, vertexFormat)) {
-            addVertexFormat(BuiltinResourceGroup::Global, id, vertexFormat);
+            addVertexFormat(CannedResourceGroup::Global, id, vertexFormat);
 
             return true;
         }
@@ -184,7 +197,7 @@ TechniqueID VulkanResourceCache::registerTechnique(const TechniqueDesc& desc, Re
     TechniqueRecord record;
     if (!resourceBuilder_->buildTechnique(desc, record)) {
         EMBER_LOG_ERROR("Failed to compile technique '{}'", desc.name);
-        return BuiltinTechnique::Opaque; // or an error sentinel
+        return CannedTechnique::Opaque; // or an error sentinel
     }
     
     TechniqueID id = nextTechniqueId_++;
@@ -234,7 +247,7 @@ VertexFormatID VulkanResourceCache::registerVertexFormat(const VertexFormatDesc&
     VertexFormatRecord record;
     if (!resourceBuilder_->buildVertexFormat(desc, record)) {
         EMBER_LOG_ERROR("Failed to compile vertex format '{}'", desc.name);
-        return BuiltinVertexFormat::Undefined; // or an error sentinel
+        return CannedVertexFormat::Undefined; // or an error sentinel
 	}
 
     VertexFormatID id = nextVertexFormatId_++;

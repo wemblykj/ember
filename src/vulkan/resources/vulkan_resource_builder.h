@@ -29,7 +29,6 @@ public:
     virtual ~VulkanResourceBuilder() = default;
 
     virtual bool buildCannedTechnique(TechniqueID id, TechniqueRecord& record) = 0;
-    virtual bool buildCannedMaterial(MaterialID id, MaterialRecord& record) = 0;
     virtual bool buildCannedGeometry(GeometryID id, GeometryRecord  & record) = 0;
     virtual bool buildCannedVertexFormat(VertexFormatID id, VertexFormatRecord& record) = 0;
 

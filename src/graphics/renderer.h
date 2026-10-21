@@ -16,7 +16,7 @@ namespace ember::graphics {
 using RenderQueue = std::vector<RenderPacket>;
 
 struct RendererPass {
-    resources::TechniqueID technique = resources::BuiltinTechnique::Opaque;
+    resources::TechniqueID technique = resources::CannedTechnique::Opaque;
 	SortPolicy sortPolicy = SortPolicy::MaterialMajor;
     RenderQueue queue;
 };

@@ -35,7 +35,7 @@ struct ShaderStageDesc {
 struct TechniqueDesc {
     std::string name;
     std::vector<ShaderStageDesc> shaderStages;
-    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
+    VertexFormatID vertexFormat = CannedVertexFormat::Undefined;
     core::BlendMode blendMode = core::BlendMode::Opaque;
     core::CullMode cullMode = core::CullMode::Back;
     bool depthTest = true;
@@ -44,7 +44,7 @@ struct TechniqueDesc {
 
 struct MaterialDesc {
     std::string name;
-    TechniqueID technique = BuiltinTechnique::Opaque;
+    TechniqueID technique = CannedTechnique::Opaque;
 };
 
 /**
@@ -61,7 +61,7 @@ struct GeometryDesc {
     // --- Vertex data (always required) ---
     std::span<const std::byte> vertexData;
     uint32_t vertexCount = 0;
-    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
+    VertexFormatID vertexFormat = CannedVertexFormat::Undefined;
 
     // --- Index data (optional — absent for non-indexed geometry) ---
     std::span<const std::byte> indexData;
