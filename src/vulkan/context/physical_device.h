@@ -9,10 +9,15 @@
 
 #include "vulkan_defs.h"
 
+struct QueueTraits {
+	float priority = 1.0;
+};
+
 struct QueueFamilyTraits {
+	
 	uint32_t queueFamilyIndex = 0;
 	VkQueueFlags flags = 0;
-	uint32_t queueCount = 0;	
+	std::vector<QueueTraits> queues;
 };
 
 struct PhysicalDeviceTraits {

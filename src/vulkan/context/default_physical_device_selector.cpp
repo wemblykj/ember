@@ -59,6 +59,12 @@ DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::preferFeatures(con
 	return *this;
 }
 
+DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::requireQueueFlags(VkQueueFlags flags) {
+	requiredQueueFlags_ |= flags;
+
+	return *this;
+}
+
 DefaultPhysicalDeviceSelector& DefaultPhysicalDeviceSelector::requireSurfaceSupport(VkSurfaceKHR surface)
 {
 	requiredSurfaceSupport_ = surface;
@@ -104,11 +110,11 @@ int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& ca
 
 	std::list<QueueFamilyTraits> candidateQueueFamilies(candidate->traits.queueFamilies.begin(), candidate->traits.queueFamilies.end());
 
-	if (requiredQueueFlags_.has_value()) {
-		const auto& requiredQueueFlags = *requiredQueueFlags_;
+	if (requiredQueueFlags_ != 0) {
+		const auto& requiredQueueFlags = requiredQueueFlags_;
 		for (auto queueFamily : candidate->traits.queueFamilies) {
-			if (queueFamily.queueCount == 0 ||
-				(queueFamily.flags & requiredQueueFlags) != requiredQueueFlags) {
+			if (queueFamily.queues.size() == 0 ||
+				(queueFamily.flags & requiredQueueFlags_) == 0) {
 					std::erase_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
 						return qf.queueFamilyIndex == queueFamily.queueFamilyIndex;
 					}); // Candidate does not support the required queue flags
@@ -121,15 +127,16 @@ int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& ca
 	}
 
 	if (requiredSurfaceSupport_ != VK_NULL_HANDLE) {
-		for (const auto queueFamily : candidateQueueFamilies) {
-			if (queueFamily.queueCount == 0)
+		auto it = candidateQueueFamilies.begin();
+		while (it != candidateQueueFamilies.end()) {
+			if (it->queues.empty())
 				continue; // Candidate does not have any queues in this family
 			VkBool32 presentSupport = VK_FALSE;
-			vkGetPhysicalDeviceSurfaceSupportKHR(candidate->handle, queueFamily.queueFamilyIndex, requiredSurfaceSupport_, &presentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(candidate->handle, it->queueFamilyIndex, requiredSurfaceSupport_, &presentSupport);
 			if (presentSupport == VK_FALSE) {
-				std::erase_if(candidateQueueFamilies, [&](const QueueFamilyTraits& qf) {
-					return qf.queueFamilyIndex == queueFamily.queueFamilyIndex;
-					}); // Candidate does not support presentation on the given surface
+				it = candidateQueueFamilies.erase(it);
+			} else {
+				++it;
 			}
 		}
 
@@ -227,6 +234,10 @@ int DefaultPhysicalDeviceSelector::evaluateCandidate(const PhysicalDevicePtr& ca
 
 		deviceScore += customScorer(candidate, effectiveTraits) * weight;
 	}
+
+	// all requirements are met, copy the candidate's core traits to the effective traits
+	effectiveTraits.	properties = candidate->traits.properties;
+	std::ranges::copy(candidateQueueFamilies, std::back_inserter(effectiveTraits.queueFamilies));
 
 	return deviceScore;
 }

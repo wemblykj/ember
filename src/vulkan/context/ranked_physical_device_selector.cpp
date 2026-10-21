@@ -20,15 +20,20 @@ RankedPhysicalDeviceSelector::RankedCandidates RankedPhysicalDeviceSelector::enu
 	RankedCandidates selectionCandidates;
 
 	for (const auto& candidate : candidates) {
-		RankedCandidate rankedCandidate{
-			.device = std::make_shared<PhysicalDevice>()
-		};
-
 		// evaluate the candidate and assign a score
-		rankedCandidate.score = evaluateCandidate(candidate, rankedCandidate.device->traits);
+		PhysicalDeviceTraits effectiveTraits; // Copy the traits to modify them if necessary
+		auto score = evaluateCandidate(candidate, effectiveTraits);
 
-		if (rankedCandidate.score >= 0) {
-			rankedCandidate.device->handle = candidate->handle;
+		if (score >= 0) {
+			auto device = std::make_shared<PhysicalDevice>();
+			device->handle = candidate->handle;
+			device->traits = effectiveTraits;
+
+			RankedCandidate rankedCandidate{
+			.score = score,
+			.device = device
+			};
+
 			selectionCandidates.emplace_back(rankedCandidate);
 		}
 	}

@@ -69,7 +69,7 @@ private:
 	std::map<VkPhysicalDeviceType, int> preferredDeviceTypes_;
 	std::set<int> requiredFeatureIndices_;
 	std::map<int, int> preferredFeatureIndexWeights_;
-	std::optional<VkQueueFlags> requiredQueueFlags_;
+	VkQueueFlags requiredQueueFlags_ = 0;
 	std::map<VkQueueFlags, int> preferredQueueFlagsSets_;
 	ExtensionSet requiredExtensions_;
 	std::map<std::string, int> preferredExtensions_;

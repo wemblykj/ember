@@ -6,6 +6,7 @@
 #include <vk_mem_alloc.h>
 
 #include <algorithm>
+#include <ranges>
 #include <vector>
 
 #include <logger.h>
@@ -30,9 +31,11 @@ bool VulkanContextVma::initialize(const PhysicalDevicePtr& physicalDevice) {
         return false;
     }
 
+	physicalDevice_ = physicalDevice;
+
     try {   
         // Create logical device
-        if (!createLogicalDevice(physicalDevice)) {
+        if (!createLogicalDevice()) {
             EMBER_LOG_ERROR("Failed to create logical device");
             return false;
         }
@@ -42,18 +45,24 @@ bool VulkanContextVma::initialize(const PhysicalDevicePtr& physicalDevice) {
             return false;
         }
 
-        // Create one time command pool
-        VkResult result = createCommandPool(graphicsQueueFamilyIndex_, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandPool_);
-        if (result != VK_SUCCESS) {
-            EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
-            return false;
+        auto graphicQueueuIt = std::find_if(physicalDevice_->traits.queueFamilies.begin(), physicalDevice_->traits.queueFamilies.end(),
+            [](const QueueFamilyTraits& qf) { return (qf.flags & VK_QUEUE_GRAPHICS_BIT) != 0; });
+
+        if (graphicQueueuIt != physicalDevice_->traits.queueFamilies.end()) {
+             const auto graphicsQueueFamilyIndex = graphicQueueuIt->queueFamilyIndex;
+
+            // Create one time command pool
+            VkResult result = createCommandPool(graphicsQueueFamilyIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandPool_);
+            if (result != VK_SUCCESS) {
+                EMBER_LOG_ERROR("Failed to create one time command pool: {}", std::to_string(result));
+                return false;
+            }
+
+            // Get graphics queue
+            vkGetDeviceQueue(device_, graphicsQueueFamilyIndex, 0, &graphicsQueue_);
+
+            graphicsQueueFamilyIndex_ = graphicsQueueFamilyIndex;
         }
-
-        physicalDevice_ = physicalDevice;
-        graphicsQueueFamilyIndex_ = physicalDevice->traits.queueFamilies.front().queueFamilyIndex;
-
-        // Get graphics queue
-        vkGetDeviceQueue(device_, graphicsQueueFamilyIndex_, 0, &graphicsQueue_);
 
         initialized_ = true;
 
@@ -73,6 +82,8 @@ void VulkanContextVma::destroy() {
         return;
     }
 
+    destroyCommandPool(commandPool_);
+
     if (allocator_ != VK_NULL_HANDLE) {
         vmaDestroyAllocator(allocator_);
         allocator_ = VK_NULL_HANDLE;
@@ -83,8 +94,6 @@ void VulkanContextVma::destroy() {
         vkDestroyDevice(device_, nullptr);
         device_ = VK_NULL_HANDLE;
     }
-
-	destroyCommandPool(commandPool_);
 
     physicalDevice_ = VK_NULL_HANDLE;
     graphicsQueue_ = VK_NULL_HANDLE;
@@ -258,15 +267,25 @@ bool VulkanContextVma::createMemoryAllocator() {
     return true;
 }
 
-bool VulkanContextVma::createLogicalDevice(const PhysicalDevicePtr& physicalDevice) {
-    // Queue create info
-    float queuePriority = 1.0f;
-    VkDeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex_;
-    queueCreateInfo.queueCount = 1;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+bool VulkanContextVma::createLogicalDevice() {
+    std::vector< VkDeviceQueueCreateInfo> queueCreateInfos;
 
+    for (auto queueFamily : physicalDevice_->traits.queueFamilies)
+    {
+        // Queue create info
+        
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily.queueFamilyIndex;
+        queueCreateInfo.queueCount = queueFamily.queues.size();
+
+        std::vector<float> priorities(queueFamily.queues.size());
+        std::ranges::transform(queueFamily.queues, std::back_inserter(priorities), [](const auto q) { return q.priority; });
+        queueCreateInfo.pQueuePriorities = priorities.data();
+
+        queueCreateInfos.emplace_back(queueCreateInfo);
+    }
+    
     // Device features
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
@@ -275,13 +294,14 @@ bool VulkanContextVma::createLogicalDevice(const PhysicalDevicePtr& physicalDevi
     // Device create info
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount = 1;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount = queueCreateInfos.size();
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
-
-    //std::vector<const char*> enabledExtensions(physicalDevice->traits.extensions.begin(), physicalDevice->traits.extensions.end());
-	//createInfo.enabledExtensionCount = static_cast<uint32_t>(physicalDevice->traits.extensions.size());
-	//createInfo.ppEnabledExtensionNames = enabledExtensions.empty() ? nullptr : enabledExtensions.data();
+    
+    std::vector<const char*> enabledExtensions(physicalDevice_->traits.extensions.size());
+    std::ranges::transform(physicalDevice_->traits.extensions, enabledExtensions.begin(), [](const auto& ext) { return ext.c_str(); });
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(physicalDevice_->traits.extensions.size());
+	createInfo.ppEnabledExtensionNames = enabledExtensions.empty() ? nullptr : enabledExtensions.data();
 
     VkResult result = vkCreateDevice(physicalDevice_->handle, &createInfo, nullptr, &device_);
     if (result != VK_SUCCESS) {
