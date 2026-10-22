@@ -3,6 +3,8 @@
 #include <resource_file_provider.h>
 
 #include <filesystem>
+#include <istream>
+#include <sstream>
 
 namespace ember::application {
 
@@ -13,8 +15,8 @@ class NativeFileProvider : public resources::ResourceFileProvider {
 public:
     NativeFileProvider(const std::filesystem::path& root, bool enforceBoundary = true);
 
-    std::optional<std::string> readText(std::string_view path) const override;
-    std::optional<std::vector<std::byte>> readBinary(std::string_view path) const override;
+    std::unique_ptr<std::istream> openText(std::string_view path) const override;
+    std::unique_ptr<std::istream> openBinary(std::string_view path) const override;
     bool exists(std::string_view path) const override;
 
 private:

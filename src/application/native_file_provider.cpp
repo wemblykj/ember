@@ -8,34 +8,26 @@ NativeFileProvider::NativeFileProvider(const std::filesystem::path& root, bool e
 	: root_(root), enforceBoundary_(enforceBoundary) {
 }
 
-std::optional<std::string> NativeFileProvider::readText(std::string_view path) const {
-    const auto fsPath = resolvePath(path);
-
-    std::ifstream stream(fsPath, std::ios::in | std::ios::binary);
-    if (!stream) {
-        return std::nullopt;
-    }
-
-    std::string contents(
-        (std::istreambuf_iterator<char>(stream)),
-        std::istreambuf_iterator<char>());
-    return contents;
-}
-
-std::optional<std::vector<std::byte>> NativeFileProvider::readBinary(std::string_view path) const {
+std::unique_ptr<std::istream> NativeFileProvider::openText(std::string_view path) const {
 	const auto fsPath = resolvePath(path);
 
-    std::ifstream stream(fsPath, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!stream) {
-        return std::nullopt;
+    auto stream = std::make_unique<std::ifstream>(fsPath, std::ios::in);
+    if (!*stream) {
+		return std::make_unique<std::istringstream>(""); // Return an empty stream if the file cannot be opened
     }
 
-    const auto size = static_cast<std::size_t>(stream.tellg());
-    stream.seekg(0, std::ios::beg);
+    return stream;
+}
 
-    std::vector<std::byte> buffer(size);
-    stream.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(size));
-    return buffer;
+std::unique_ptr<std::istream> NativeFileProvider::openBinary(std::string_view path) const {
+	const auto fsPath = resolvePath(path);
+
+    auto stream = std::make_unique<std::ifstream>(fsPath, std::ios::in | std::ios::binary);
+    if (!*stream) {
+		return std::make_unique<std::istringstream>(""); // Return an empty stream if the file cannot be opened
+    }
+
+    return stream;
 }
 
 bool NativeFileProvider::exists(std::string_view path) const {
