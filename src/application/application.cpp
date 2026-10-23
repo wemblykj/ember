@@ -7,6 +7,8 @@
 #include <vulkan_renderer.h>
 #include <presentation/vulkan_surface_provider_sdl3.h>
 
+#include <canned_resources.h>
+
 #include "native_file_provider.h"
 
 namespace ember::application {
@@ -41,6 +43,12 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
         EMBER_LOG_ERROR("Failed to create renderer");
         return false;
     }
+
+    auto& resourceCache = renderer_->getResourceCache();
+
+	resourceCache.assertTechnique(resources::CannedTechnique::Opaque);
+    resourceCache.assertMaterial(resources::CannedMaterial::Undefined);
+    resourceCache.assertGeometry(resources::CannedGeometry::UnitQuad);
 
     isRunning_ = true;
 
