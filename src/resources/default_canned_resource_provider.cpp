@@ -22,15 +22,15 @@ namespace ember::resources {
 bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc& desc) {
 	switch (id)
 	{
-	case BuiltinShader::Invalid:
-	case BuiltinShader::Undefined:// Add shader stages for opaque technique
+	case CannedShader::Invalid:
+	case CannedShader::Undefined:// Add shader stages for opaque technique
 		throw std::invalid_argument("Invalid or undefined shader ID");
-	case BuiltinShader::GenericTransform:
+	case CannedShader::GenericTransform:
 		desc.type = ShaderType::Vertex;
 		desc.entryPoint = "main";
 		desc.sourcePath = "shaders/canned/generic_transform.vert";
 		break;
-	case BuiltinShader::OpaquePBR:
+	case CannedShader::OpaquePBR:
 		desc.type = ShaderType::Fragment;
 		desc.entryPoint = "main";
 		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
@@ -43,28 +43,28 @@ bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc&
 bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, TechniqueDesc& desc) {
 	switch (id)
 	{
-		case BuiltinTechnique::Invalid:
-		case BuiltinTechnique::Undefined:
-		case BuiltinTechnique::Opaque:
+		case CannedTechnique::Invalid:
+		case CannedTechnique::Undefined:
+		case CannedTechnique::Opaque:
 			desc.name = "canned.technique.opaque";
 			desc.blendMode = core::BlendMode::Opaque;
 			desc.cullMode = core::CullMode::Back;
 			desc.depthTest = true;
 			desc.depthWrite = true;
 			// Add shader stages for opaque technique
-			desc.shaderStages.vertex = BuiltinShader::GenericTransform;
-			desc.shaderStages.fragment = BuiltinShader::OpaquePBR;
+			desc.shaderStages.vertex = CannedShader::GenericTransform;
+			desc.shaderStages.fragment = CannedShader::OpaquePBR;
 			return true;
 
-		case BuiltinTechnique::Transparent:
+		case CannedTechnique::Transparent:
 			desc.name = "canned.technique.transparent";
 			desc.blendMode = core::BlendMode::AlphaBlend;
 			desc.cullMode = core::CullMode::Back;
 			desc.depthTest = true;
 			desc.depthWrite = false;
 			// Add shader stages for transparent technique
-			desc.shaderStages.vertex = BuiltinShader::GenericTransform;
-			desc.shaderStages.fragment = BuiltinShader::OpaquePBR;
+			desc.shaderStages.vertex = CannedShader::GenericTransform;
+			desc.shaderStages.fragment = CannedShader::OpaquePBR;
 			return true;
 	
 		default:
@@ -76,14 +76,14 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 bool DefaultCannedResourceProvider::GetMaterialDescriptor(MaterialID id, MaterialDesc& desc) {
 	switch (id)
 	{
-		case BuiltinMaterial::Invalid:
+		case CannedMaterial::Invalid:
 			desc.name = "canned.material.invalid";
-			desc.technique = BuiltinTechnique::Invalid;
+			desc.technique = CannedTechnique::Invalid;
 			return true;
 
-		case BuiltinMaterial::Undefined:
+		case CannedMaterial::Undefined:
 			desc.name = "canned.material.undefined";
-			desc.technique = BuiltinTechnique::Undefined;
+			desc.technique = CannedTechnique::Undefined;
 			return true;
 
 		default:
@@ -95,24 +95,24 @@ bool DefaultCannedResourceProvider::GetMaterialDescriptor(MaterialID id, Materia
 bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, GeometryDesc& desc) {
 	switch (id)
 	{
-		case BuiltinGeometry::Invalid:
+		case CannedGeometry::Invalid:
 			desc.name = "canned.geometry.invalid";
 			//desc.vertexData;
 			//desc.indexData;
 			desc.indexCount = 0;
-			desc.vertexFormat = BuiltinVertexFormat::Undefined;
+			desc.vertexFormat = CannedVertexFormat::Undefined;
 			return true;
 
-		case BuiltinGeometry::Undefined:
+		case CannedGeometry::Undefined:
 			desc.name = "canned.geometry.undefined";
 			//desc.vertexData;
 			//desc.indexData;
 			desc.indexCount = 0;
 			desc.indexType = IndexType::Undefined;
-			desc.vertexFormat = BuiltinVertexFormat::Undefined;
+			desc.vertexFormat = CannedVertexFormat::Undefined;
 			return true;
 
-		case BuiltinGeometry::UnitQuad:
+		case CannedGeometry::UnitQuad:
 			// Provide vertex and index data for a unit quad
 			// This is just an example; actual data would be filled in here
 			desc.name = "canned.geometry.unit_quad";
@@ -121,7 +121,7 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 			desc.indexData = std::as_bytes(std::span(kUnitQuadIndices));
 			desc.indexCount = static_cast<uint16_t>(std::size(kUnitQuadIndices));
 			desc.indexType = IndexType::UInt16;
-			desc.vertexFormat = BuiltinVertexFormat::PositionUV;
+			desc.vertexFormat = CannedVertexFormat::PositionUV;
 			return true;
 		default:
 			break;
@@ -132,11 +132,11 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id, VertexFormatDesc& desc) {
 	switch (id)
 	{
-		case BuiltinVertexFormat::Undefined:
+		case CannedVertexFormat::Undefined:
 			desc.stride = 0;
 			desc.attributes.clear();
 			return true;
-		case BuiltinVertexFormat::PositionUV:
+		case CannedVertexFormat::PositionUV:
 			desc.name = "canned.vertex_format.position_uv";
 			desc.stride = sizeof(QuadVertex);
 			desc.attributes = {

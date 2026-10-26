@@ -25,9 +25,9 @@ bool DefaultVulkanResourceBuilder::buildCannedShader(ShaderID id, ShaderRecord& 
 
 bool DefaultVulkanResourceBuilder::buildCannedTechnique(TechniqueID id, const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
 	switch (id) {
-	case BuiltinTechnique::Opaque:
+	case CannedTechnique::Opaque:
 		return buildOpaqueTechnique(resourceResolver, technique);
-	case BuiltinTechnique::Transparent:
+	case CannedTechnique::Transparent:
 		return buildTransparentTechnique(resourceResolver, technique);
 	}
 
@@ -117,8 +117,8 @@ bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const VulkanResourceReso
 	VulkanPipelineBuilder pipelineBuilder;
 
 	pipelineBuilder
-		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::GenericTransform))
-		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::OpaquePBR))
+		.withShaderStage(resourceResolver.resolveShader(CannedShader::GenericTransform))
+		.withShaderStage(resourceResolver.resolveShader(CannedShader::OpaquePBR))
 		.withDevice(context_->getDevice())
 		.build(technique.pipeline);
 	
@@ -129,8 +129,8 @@ bool DefaultVulkanResourceBuilder::buildTransparentTechnique(const VulkanResourc
 	VulkanPipelineBuilder pipelineBuilder;
 
 	pipelineBuilder
-		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::GenericTransform))
-		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::OpaquePBR))
+		.withShaderStage(resourceResolver.resolveShader(CannedShader::GenericTransform))
+		.withShaderStage(resourceResolver.resolveShader(CannedShader::OpaquePBR))
 		.withDevice(context_->getDevice())
 		.build(technique.pipeline);
 

@@ -98,7 +98,7 @@ private:
     };
 
     struct ResourceCacheEntry {
-        ResourceGroupID group = resources::BuiltinResourceGroup::Global;  ///< Owning resource group
+        ResourceGroupID group = resources::CannedResourceGroup::Global;  ///< Owning resource group
         std::uint64_t hash = 0;                                 ///< Stable hash of the source desc (0 = not set)
         std::uint32_t refCount = 1;                             ///< Simple reference count
         std::uint64_t lastUsedFrame = 0;                        ///< Last frame index this resource was used on
@@ -133,21 +133,21 @@ private:
     std::unique_ptr<VulkanResourceBuilder> resourceBuilder_;
 	std::unique_ptr<resources::CannedResourceProvider> cannedResourceProvider_;
 
-	TechniqueID invalidTechniqueId_ = resources::BuiltinTechnique::Undefined;
-    TechniqueID unassignedTechniqueId_ = resources::BuiltinTechnique::Undefined;
-	TechniqueID unresolvedTechniqueId_ = resources::BuiltinTechnique::Undefined;
+	TechniqueID invalidTechniqueId_ = resources::CannedTechnique::Undefined;
+    TechniqueID unassignedTechniqueId_ = resources::CannedTechnique::Undefined;
+	TechniqueID unresolvedTechniqueId_ = resources::CannedTechnique::Undefined;
 
-	MaterialID invalidMaterialId_ = resources::BuiltinMaterial::Undefined;
-    MaterialID unassignedMaterialId_ = resources::BuiltinMaterial::Undefined;
-    MaterialID unresolvedMaterialId_ = resources::BuiltinMaterial::Undefined;
-	GeometryID invalidGeometryId_ = resources::BuiltinGeometry::Undefined;
+	MaterialID invalidMaterialId_ = resources::CannedMaterial::Undefined;
+    MaterialID unassignedMaterialId_ = resources::CannedMaterial::Undefined;
+    MaterialID unresolvedMaterialId_ = resources::CannedMaterial::Undefined;
+	GeometryID invalidGeometryId_ = resources::CannedGeometry::Undefined;
 
-    ResourceGroupID nextGroupId_ = resources::BuiltinResourceGroup::Custom;
-	ShaderID nextShaderId_ = resources::BuiltinShader::Custom;
-    TechniqueID nextTechniqueId_ = resources::BuiltinTechnique::Custom;
-    MaterialID nextMaterialId_ = resources::BuiltinMaterial::Custom;
-    GeometryID nextGeometryId_ = resources::BuiltinGeometry::Custom;
-    VertexFormatID nextVertexFormatId_ = resources::BuiltinVertexFormat::Custom;
+    ResourceGroupID nextGroupId_ = resources::CannedResourceGroup::Custom;
+	ShaderID nextShaderId_ = resources::CannedShader::Custom;
+    TechniqueID nextTechniqueId_ = resources::CannedTechnique::Custom;
+    MaterialID nextMaterialId_ = resources::CannedMaterial::Custom;
+    GeometryID nextGeometryId_ = resources::CannedGeometry::Custom;
+    VertexFormatID nextVertexFormatId_ = resources::CannedVertexFormat::Custom;
 
     mutable std::unordered_map<ShaderID, ShaderEntry> shaders_;
     mutable std::unordered_map<TechniqueID, TechniqueEntry> techniques_;

@@ -160,6 +160,8 @@ public:
 		pipelineInfo.pDepthStencilState = depthStencilState_ ? &*depthStencilState_ : nullptr;
 
 		vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
+
+		return true;
 	}
 
 private:

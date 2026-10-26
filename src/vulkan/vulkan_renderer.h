@@ -28,7 +28,10 @@ class VulkanRenderer : public graphics::Renderer {
     };
 
 public:
-    explicit VulkanRenderer(const graphics::RendererConfig& config, std::shared_ptr<VulkanContext> context, std::shared_ptr<VulkanResourceCache> resourceCache);
+    explicit VulkanRenderer(
+        const graphics::RendererConfig& config, 
+        std::shared_ptr<VulkanContext> context, 
+        std::shared_ptr<VulkanResourceCache> resourceCache);
     ~VulkanRenderer() override;
     
     bool initialize(graphics::SurfaceProviderPtr surfaceProvider) override;

@@ -7,6 +7,8 @@
 #include <vulkan_renderer.h>
 #include <presentation/vulkan_surface_provider_sdl3.h>
 
+#include <canned_resources.h>
+
 #include "native_file_provider.h"
 #include <canned_resource_file_provider.h>
 
@@ -45,9 +47,12 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
     }
 
     auto& resourceCache = renderer_->getResourceCache();
-	resourceCache.assertTechnique(resources::BuiltinTechnique::Opaque);
-    resourceCache.assertTechnique(resources::BuiltinTechnique::Transparent);
-    
+
+	resourceCache.assertTechnique(resources::CannedTechnique::Opaque);
+    resourceCache.assertTechnique(resources::CannedTechnique::Transparent);
+    resourceCache.assertMaterial(resources::CannedMaterial::Undefined);
+    resourceCache.assertGeometry(resources::CannedGeometry::UnitQuad);
+
     isRunning_ = true;
 
     EMBER_LOG_INFO("Ember Application initialized successfully");

@@ -5,14 +5,14 @@
 namespace ember::resources {
 
 /// @brief Built-in resource group IDs for common rendering resource groups.
-namespace BuiltinResourceGroup {
+namespace CannedResourceGroup {
     constexpr ResourceGroupID Global = 0;
     /// @brief Base value for custom resource groups.
     constexpr ResourceGroupID Custom = 0x8000;
 }
 
 /// @brief Built-in shader IDs for common rendering shaders.
-namespace BuiltinShader {
+namespace CannedShader {
 	constexpr ShaderID Invalid = -1;
 	constexpr ShaderID Undefined = 0;
     constexpr ShaderID Vertex = 0x1000;
@@ -24,7 +24,7 @@ namespace BuiltinShader {
 }
 
 /// @brief Built-in technique IDs for common rendering techniques.
-namespace BuiltinTechnique {
+namespace CannedTechnique {
     constexpr TechniqueID Invalid = -1;
     constexpr TechniqueID Undefined = 0;
     constexpr TechniqueID Opaque = 1;
@@ -34,7 +34,7 @@ namespace BuiltinTechnique {
 }
 
 /// @brief Built-in material IDs for common rendering materials.
-namespace BuiltinMaterial {
+namespace CannedMaterial {
     constexpr MaterialID Invalid = -1;
     constexpr MaterialID Undefined = 0;
     /// @brief Base value for custom materials.
@@ -42,7 +42,7 @@ namespace BuiltinMaterial {
 }
 
 /// @brief Built-in geometry IDs for common rendering geometries.
-namespace BuiltinGeometry {
+namespace CannedGeometry {
     constexpr GeometryID Invalid = -1;
     constexpr GeometryID Undefined = 0;
     constexpr GeometryID UnitQuad = 1;
@@ -51,7 +51,7 @@ namespace BuiltinGeometry {
     constexpr GeometryID Custom = 0x8000;
 }
 
-namespace BuiltinVertexFormat {
+namespace CannedVertexFormat {
     constexpr VertexFormatID Undefined = 0;
     constexpr VertexFormatID PositionUV = 1;
     /// @brief Base value for custom vertex formats.

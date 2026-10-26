@@ -16,8 +16,8 @@ using SortKey = uint64_t;
 /// @brief A single render packet, representing a draw call with associated transform, material, and geometry.
 struct RenderPacket {
     core::Mat4 transform;
-    resources::MaterialID materialId = resources::BuiltinMaterial::Undefined;
-    resources::GeometryID geometryId = resources::BuiltinGeometry::Undefined;
+    resources::MaterialID materialId = resources::CannedMaterial::Undefined;
+    resources::GeometryID geometryId = resources::CannedGeometry::Undefined;
     SortKey sortKey = 0;
 };
 

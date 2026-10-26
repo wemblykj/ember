@@ -17,13 +17,13 @@ struct ResourceGroupDesc {
 };
 
 struct ShaderStages {
-    ShaderID vertex = BuiltinShader::GenericTransform;      // Required
-    ShaderID fragment = BuiltinShader::OpaquePBR;           // Required
-    ShaderID geometry = BuiltinShader::Undefined;           // Optional
-    ShaderID tessControl = BuiltinShader::Undefined;        // Optional
-    ShaderID tessEval = BuiltinShader::Undefined;           // Optional
-    ShaderID mesh = BuiltinShader::Undefined;               // Optional
-	ShaderID compute = BuiltinShader::Undefined;            // Optional
+    ShaderID vertex = CannedShader::GenericTransform;      // Required
+    ShaderID fragment = CannedShader::OpaquePBR;           // Required
+    ShaderID geometry = CannedShader::Undefined;           // Optional
+    ShaderID tessControl = CannedShader::Undefined;        // Optional
+    ShaderID tessEval = CannedShader::Undefined;           // Optional
+    ShaderID mesh = CannedShader::Undefined;               // Optional
+	ShaderID compute = CannedShader::Undefined;            // Optional
 };
 
 struct ShaderDesc {
@@ -41,12 +41,12 @@ struct TechniqueDesc {
     bool depthTest = true;
     bool depthWrite = true;
 	ShaderStages shaderStages;
-    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
+    VertexFormatID vertexFormat = CannedVertexFormat::Undefined;
 };
 
 struct MaterialDesc {
     std::string name;
-    TechniqueID technique = BuiltinTechnique::Opaque;
+    TechniqueID technique = CannedTechnique::Opaque;
 };
 
 /**
@@ -63,7 +63,7 @@ struct GeometryDesc {
     // --- Vertex data (always required) ---
     std::span<const std::byte> vertexData;
     uint32_t vertexCount = 0;
-    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
+    VertexFormatID vertexFormat = CannedVertexFormat::Undefined;
 
     // --- Index data (optional — absent for non-indexed geometry) ---
     std::span<const std::byte> indexData;

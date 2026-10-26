@@ -181,7 +181,7 @@ void VulkanRenderer::beginFrame() {
 }
 
 void VulkanRenderer::submitPass(const RendererPass& pass) {
-	MaterialID currentMaterial = BuiltinMaterial::Undefined;
+	MaterialID currentMaterial = CannedMaterial::Undefined;
 
     for (const auto& packet : pass.queue) {
         if (packet.materialId != currentMaterial) {

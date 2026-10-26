@@ -32,15 +32,15 @@ public:
     virtual bool assertVertexFormat(VertexFormatID id) = 0;
 
 	/// @brief Register a new shader with the specified description. Shaders define programmable stages of the rendering pipeline (e.g., vertex, fragment). Returns a unique ShaderID that can be used to reference this shader in techniques.
-	virtual ShaderID registerShader(const ShaderDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
+	virtual ShaderID registerShader(const ShaderDesc& desc, ResourceGroupID group = CannedResourceGroup::Global) = 0;
     /// @brief Register a new rendering technique with the specified description. Techniques define the fixed-function and shader state used for rendering. Returns a unique TechniqueID that can be used to reference this technique in materials and render passes.
-    virtual TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
+    virtual TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group = CannedResourceGroup::Global) = 0;
     /// @brief Register a new material with the specified description. Materials reference techniques and provide parameter bindings for rendering. Returns a unique MaterialID that can be used in render packets.
-    virtual MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
+    virtual MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group = CannedResourceGroup::Global) = 0;
     /// @brief Register new geometry data (vertex/index buffers) with the specified description. Returns a unique GeometryID that can be used in render packets.
-    virtual GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
+    virtual GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group = CannedResourceGroup::Global) = 0;
 	/// @brief Register a new vertex format with the specified description. Vertex formats define the layout of vertex data in buffers. Returns a unique VertexFormatID that can be used to reference this format in techniques and geometries.
-	virtual VertexFormatID registerVertexFormat(const VertexFormatDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;    
+	virtual VertexFormatID registerVertexFormat(const VertexFormatDesc& desc, ResourceGroupID group = CannedResourceGroup::Global) = 0;    
 	
 	/// @brief Set the technique to be used when a render packet specifies an invalid technique. This is useful for handling cases where a technique reference is invalid or missing, allowing the renderer to fall back to a default technique instead of failing.
     virtual TechniqueID setInvalidTechniqueId(TechniqueID id) = 0;
