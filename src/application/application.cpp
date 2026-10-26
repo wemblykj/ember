@@ -8,6 +8,7 @@
 #include <presentation/vulkan_surface_provider_sdl3.h>
 
 #include "native_file_provider.h"
+#include <canned_resource_file_provider.h>
 
 namespace ember::application {
 
@@ -31,7 +32,8 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
         return false;
     }
 
-    fileProvider_ = std::make_shared<NativeFileProvider>("./resources");
+    //fileProvider_ = std::make_shared<NativeFileProvider>("./resources");
+	fileProvider_ = std::make_shared<resources::CannedResourceFileProvider>();
 
     surfaceProvider_ = vulkan::createSDLSurfaceProvider(window_.get());
 
@@ -42,6 +44,10 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
         return false;
     }
 
+    auto& resourceCache = renderer_->getResourceCache();
+	resourceCache.assertTechnique(resources::BuiltinTechnique::Opaque);
+    resourceCache.assertTechnique(resources::BuiltinTechnique::Transparent);
+    
     isRunning_ = true;
 
     EMBER_LOG_INFO("Ember Application initialized successfully");

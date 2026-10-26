@@ -10,6 +10,7 @@ class DefaultCannedResourceProvider : public CannedResourceProvider {
 public:
 	DefaultCannedResourceProvider() = default;
 
+	bool GetShaderDescriptor(ShaderID id, ShaderDesc& desc) override;
 	bool GetTechniqueDescriptor(TechniqueID id, TechniqueDesc& desc) override;
 	bool GetMaterialDescriptor(MaterialID id, MaterialDesc& desc) override;
 	bool GetGeometryDescriptor(GeometryID id, GeometryDesc& desc) override;

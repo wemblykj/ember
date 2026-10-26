@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 
 #include <resource_types.h>
+#include <resource_descriptors.h>
 
 #include "../vulkan_defs.h"
 
@@ -17,6 +18,11 @@ struct AllocationHandle {
     enum class Backend : uint8_t { None = 0, Vma, Vk } backend = Backend::None; uintptr_t handle = 0; // opaque storage for backend-specific handle
 };
 
+struct ShaderRecord {
+	VkShaderModule module = VK_NULL_HANDLE; ///< Vulkan shader module handle
+	VkShaderStageFlagBits type = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM; ///< Shader stage (vertex, fragment, etc.)
+};
+
 /**
     * @brief Technique (pipeline) record.
     *
@@ -26,11 +32,6 @@ struct AllocationHandle {
 struct TechniqueRecord {
     VkPipeline pipeline = VK_NULL_HANDLE;                   ///< Graphics pipeline handle
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;       ///< Pipeline layout
-
-    // VK_NULL_HANDLE if unused by this technique
-    VkShaderModule vertModule = VK_NULL_HANDLE;             ///< Vertex shader module (retained for hot-reload)
-    VkShaderModule fragModule = VK_NULL_HANDLE;             ///< Fragment shader module (retained for hot-reload)
-    VkShaderModule computeModule = VK_NULL_HANDLE;
 
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;  ///< Sample count used when creating pipeline
     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; ///< Primitive topology

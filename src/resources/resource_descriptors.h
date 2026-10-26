@@ -13,33 +13,35 @@
 namespace ember::resources {
 
 struct ResourceGroupDesc {
-    std::string debugName;
+    std::string name;
 };
 
-enum class ShaderStage : uint8_t {
-    Vertex,
-    Fragment,
-    Compute,
-    Geometry,
-    TessellationControl,
-    TessellationEvaluation,
-    // Mesh, Task — add later if/when needed
+struct ShaderStages {
+    ShaderID vertex = BuiltinShader::GenericTransform;      // Required
+    ShaderID fragment = BuiltinShader::OpaquePBR;           // Required
+    ShaderID geometry = BuiltinShader::Undefined;           // Optional
+    ShaderID tessControl = BuiltinShader::Undefined;        // Optional
+    ShaderID tessEval = BuiltinShader::Undefined;           // Optional
+    ShaderID mesh = BuiltinShader::Undefined;               // Optional
+	ShaderID compute = BuiltinShader::Undefined;            // Optional
 };
 
-struct ShaderStageDesc {
-    ShaderStage stage;
+struct ShaderDesc {
+    std::string name;
+    ShaderType type;
     std::string entryPoint = "main";
     std::string sourcePath;
 };
 
+
 struct TechniqueDesc {
     std::string name;
-    std::vector<ShaderStageDesc> shaderStages;
-    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
     core::BlendMode blendMode = core::BlendMode::Opaque;
     core::CullMode cullMode = core::CullMode::Back;
     bool depthTest = true;
     bool depthWrite = true;
+	ShaderStages shaderStages;
+    VertexFormatID vertexFormat = BuiltinVertexFormat::Undefined;
 };
 
 struct MaterialDesc {

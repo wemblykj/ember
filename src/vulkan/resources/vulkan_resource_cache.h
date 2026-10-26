@@ -7,16 +7,21 @@
 
 #include <resource_types.h>
 #include <resource_cache.h>
+#include <canned_resource_provider.h>
 
 #include "../context/vulkan_context.h"
-#include "vulkan_resource_builder.h"
 
+#include "vulkan_resource_builder.h"
+#include "vulkan_resource_resolver.h"
+
+using ShaderID = ember::resources::ShaderID;
 using TechniqueID = ember::resources::TechniqueID;
 using MaterialID = ember::resources::MaterialID;
 using GeometryID = ember::resources::GeometryID;
 using ResourceGroupID = ember::resources::ResourceGroupID;
 using VertexFormatID = ember::resources::VertexFormatID;
 
+using ShaderDesc = ember::resources::ShaderDesc;
 using TechniqueDesc = ember::resources::TechniqueDesc;
 using MaterialDesc = ember::resources::MaterialDesc;
 using GeometryDesc = ember::resources::GeometryDesc;
@@ -27,31 +32,34 @@ namespace ember::vulkan {
 /**
     * @brief Vulkan resource cache implementation
     */
-class VulkanResourceCache : public resources::ResourceCache {
+class VulkanResourceCache : virtual public resources::ResourceCache, virtual public VulkanResourceResolver {
 public:
     VulkanResourceCache(const resources::ResourceCacheConfig& config, 
     	std::shared_ptr<VulkanContext> context,
-        std::unique_ptr<VulkanResourceBuilder> compiler);
+        std::unique_ptr<VulkanResourceBuilder> resourceBuilder,
+        std::unique_ptr<resources::CannedResourceProvider> cannedResourceProvider);
     ~VulkanResourceCache() override;
 
-    // VulkanResourceCache
+    // VulkanResourceResolver
 public:
-    const TechniqueRecord& ResolveTechnique(TechniqueID id);
-    const MaterialRecord& ResolveMaterial(MaterialID id);
-    const GeometryRecord& ResolveGeometry(GeometryID id);
-	const VertexFormatRecord& ResolveVertexFormat(VertexFormatID id);
+	const ShaderRecord& resolveShader(ShaderID id) const override;
+    const TechniqueRecord& resolveTechnique(TechniqueID id) const override;
+    const MaterialRecord& resolveMaterial(MaterialID id) const override;
+    const GeometryRecord& resolveGeometry(GeometryID id) const override;
+	const VertexFormatRecord& resolveVertexFormat(VertexFormatID id) const override;
 
     // ResourceCache
 public:
     void clearAllResources() override;
     ResourceGroupID createResourceGroup(const ResourceGroupDesc& desc) override;
-    void destroyVertexFormat(std::vector<unsigned>::value_type id);
     void releaseResourceGroup(ResourceGroupID group) override;
+    bool assertShader(ShaderID id) override;
     bool assertTechnique(TechniqueID id) override;
     bool assertMaterial(MaterialID id) override;
     bool assertGeometry(GeometryID id) override;
     bool assertVertexFormat(VertexFormatID id) override;
 
+	ShaderID registerShader(const ShaderDesc& desc, ResourceGroupID group) override;
     TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) override;
     MaterialID registerMaterial(const MaterialDesc& desc, ResourceGroupID group) override;
     GeometryID registerGeometry(const GeometryDesc& desc, ResourceGroupID group) override;
@@ -68,10 +76,13 @@ public:
 
 private:
     MaterialID bindMaterial(MaterialID id);
+    void destroyShader(ShaderID id);
     void destroyMaterial(MaterialID id);
     void destroyTechnique(TechniqueID id);
     void destroyGeometry(GeometryID id);
+    void destroyVertexFormat(VertexFormatID id);
 
+    void addShader(ResourceGroupID group, ShaderID id, const ShaderRecord& record);
     void addTechnique(ResourceGroupID group, TechniqueID id, const TechniqueRecord& record);
     void addMaterial(ResourceGroupID group, MaterialID id, const MaterialRecord& record);
     void addGeometry(ResourceGroupID group, GeometryID id, const GeometryRecord& record, const GeometryAllocation& allocation);
@@ -79,6 +90,7 @@ private:
 
 private:
     struct ResourceGroupMembers {
+		std::vector<ShaderID> shaders;
         std::vector<TechniqueID> techniques;
         std::vector<MaterialID> materials;
         std::vector<GeometryID> geometry;
@@ -91,6 +103,10 @@ private:
         std::uint32_t refCount = 1;                             ///< Simple reference count
         std::uint64_t lastUsedFrame = 0;                        ///< Last frame index this resource was used on
         std::size_t memorySize = 0;                             ///< Bytes allocated on GPU for this resource
+    };
+
+    struct ShaderEntry : ResourceCacheEntry {
+        ShaderRecord record;
     };
 
     struct TechniqueEntry : ResourceCacheEntry {
@@ -115,6 +131,7 @@ private:
 
     std::shared_ptr<VulkanContext> context_;
     std::unique_ptr<VulkanResourceBuilder> resourceBuilder_;
+	std::unique_ptr<resources::CannedResourceProvider> cannedResourceProvider_;
 
 	TechniqueID invalidTechniqueId_ = resources::BuiltinTechnique::Undefined;
     TechniqueID unassignedTechniqueId_ = resources::BuiltinTechnique::Undefined;
@@ -126,15 +143,17 @@ private:
 	GeometryID invalidGeometryId_ = resources::BuiltinGeometry::Undefined;
 
     ResourceGroupID nextGroupId_ = resources::BuiltinResourceGroup::Custom;
+	ShaderID nextShaderId_ = resources::BuiltinShader::Custom;
     TechniqueID nextTechniqueId_ = resources::BuiltinTechnique::Custom;
     MaterialID nextMaterialId_ = resources::BuiltinMaterial::Custom;
     GeometryID nextGeometryId_ = resources::BuiltinGeometry::Custom;
     VertexFormatID nextVertexFormatId_ = resources::BuiltinVertexFormat::Custom;
 
-    std::unordered_map<TechniqueID, TechniqueEntry> techniques_;
-    std::unordered_map<MaterialID, MaterialEntry> materials_;
-    std::unordered_map<GeometryID, GeometryEntry> geometry_;
-	std::unordered_map<VertexFormatID, VertexFormatEntry> vertexFormats_;
+    mutable std::unordered_map<ShaderID, ShaderEntry> shaders_;
+    mutable std::unordered_map<TechniqueID, TechniqueEntry> techniques_;
+    mutable std::unordered_map<MaterialID, MaterialEntry> materials_;
+    mutable std::unordered_map<GeometryID, GeometryEntry> geometry_;
+	mutable std::unordered_map<VertexFormatID, VertexFormatEntry> vertexFormats_;
 
     std::unordered_map<ResourceGroupID, ResourceGroupMembers> groupMembers_;
     std::unordered_map<ResourceGroupID, std::string> groupNames_;

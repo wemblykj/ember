@@ -1,5 +1,7 @@
 #include "default_canned_resource_provider.h"
 
+#include <stdexcept>
+
 namespace {
 	struct QuadVertex {
 		float position[2];  // VK_FORMAT_R32G32_SFLOAT
@@ -16,7 +18,28 @@ namespace {
 	constexpr uint16_t kUnitQuadIndices[] = { 0, 1, 2, 2, 3, 0 };
 }
 namespace ember::resources {
-	
+
+bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc& desc) {
+	switch (id)
+	{
+	case BuiltinShader::Invalid:
+	case BuiltinShader::Undefined:// Add shader stages for opaque technique
+		throw std::invalid_argument("Invalid or undefined shader ID");
+	case BuiltinShader::GenericTransform:
+		desc.type = ShaderType::Vertex;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/generic_transform.vert";
+		break;
+	case BuiltinShader::OpaquePBR:
+		desc.type = ShaderType::Fragment;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
+		break;
+	}
+
+	return false;
+}
+
 bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, TechniqueDesc& desc) {
 	switch (id)
 	{
@@ -29,8 +52,8 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 			desc.depthTest = true;
 			desc.depthWrite = true;
 			// Add shader stages for opaque technique
-			desc.shaderStages.push_back({ ShaderStage::Vertex, "main", "shaders/canned/opaque.vert" });
-			desc.shaderStages.push_back({ ShaderStage::Fragment, "main", "shaders/canned/opaque.frag" });
+			desc.shaderStages.vertex = BuiltinShader::GenericTransform;
+			desc.shaderStages.fragment = BuiltinShader::OpaquePBR;
 			return true;
 
 		case BuiltinTechnique::Transparent:
@@ -40,8 +63,8 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 			desc.depthTest = true;
 			desc.depthWrite = false;
 			// Add shader stages for transparent technique
-			desc.shaderStages.push_back({ ShaderStage::Vertex, "main", "shaders/canned/transparent.vert" });
-			desc.shaderStages.push_back({ ShaderStage::Fragment, "main", "shaders/canned/transparent.frag" });
+			desc.shaderStages.vertex = BuiltinShader::GenericTransform;
+			desc.shaderStages.fragment = BuiltinShader::OpaquePBR;
 			return true;
 	
 		default:
@@ -124,6 +147,8 @@ bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id,
 		default:
 			break;
 	}
+
+	return false;
 }
 
 } // namespace ember::resources

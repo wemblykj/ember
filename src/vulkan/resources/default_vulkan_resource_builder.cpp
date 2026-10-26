@@ -3,6 +3,7 @@
 #include <logger.h>
 
 #include "cleanup_stack.h"
+#include "vulkan_pipeline_builder.h"
 
 using namespace ember::core;
 using namespace ember::resources;
@@ -12,29 +13,25 @@ namespace ember::vulkan {
 DefaultVulkanResourceBuilder::DefaultVulkanResourceBuilder(
 	std::shared_ptr<VulkanContext> context,
 	std::unique_ptr<VulkanShaderCompiler> shaderCompiler,
-	std::unique_ptr<CannedResourceProvider> cannedResourceProvider,
 	std::shared_ptr<ResourceFileProvider> fileProvider)
-    : context_(std::move(context))
-    , shaderCompiler_(std::move(shaderCompiler	))
-	, cannedResourceProvider_(std::move(cannedResourceProvider))
-    , fileProvider_(std::move(fileProvider)) {
+	: context_(std::move(context))
+	, shaderCompiler_(std::move(shaderCompiler))
+	, fileProvider_(std::move(fileProvider)) {
 }
 
-bool DefaultVulkanResourceBuilder::buildCannedTechnique(TechniqueID id, TechniqueRecord& technique) {
+bool DefaultVulkanResourceBuilder::buildCannedShader(ShaderID id, ShaderRecord& record) {
+	return false;
+}
+
+bool DefaultVulkanResourceBuilder::buildCannedTechnique(TechniqueID id, const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
 	switch (id) {
 	case BuiltinTechnique::Opaque:
-		return buildOpaqueTechnique(technique);
+		return buildOpaqueTechnique(resourceResolver, technique);
 	case BuiltinTechnique::Transparent:
-		return buildTransparentTechnique(technique);
+		return buildTransparentTechnique(resourceResolver, technique);
 	}
 
-	TechniqueDesc descriptor;
-	if (!cannedResourceProvider_->GetTechniqueDescriptor(id, descriptor)) {
-		EMBER_LOG_ERROR("Failed to get descriptor for canned technique ID {}", id);
-		return false;
-	}
-
-	return buildTechnique(descriptor, technique);
+	return false;
 }
 
 bool DefaultVulkanResourceBuilder::buildCannedMaterial(MaterialID id, MaterialRecord& record) {
@@ -49,62 +46,37 @@ bool DefaultVulkanResourceBuilder::buildCannedVertexFormat(VertexFormatID id, Ve
 	return false;
 }
 
-bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, TechniqueRecord& technique) {
-	bool hasVertex = false, hasFragment = false, hasCompute = false;
-
-	CleanupStack cleanup;
-
-	std::vector<VkPipelineShaderStageCreateInfo> stages;
-
-	for (const auto& stage : desc.shaderStages) {
-		VkShaderModule module = VK_NULL_HANDLE;
-		if (!shaderCompiler_->compileShaderStage(stage, module)) {
-			EMBER_LOG_ERROR("Technique '{}': failed to compile shader stage '{}'", desc.name, stage.sourcePath);
-			return false;
-		}
-
-		cleanup.push([&, module] { shaderCompiler_->destroyShaderModule(module); });
-
-		switch (stage.stage) {
-		case ShaderStage::Vertex:   technique.vertModule = module; hasVertex = true; break;
-		case ShaderStage::Fragment: technique.fragModule = module; hasFragment = true; break;
-		case ShaderStage::Compute:  technique.computeModule = module; hasCompute = true; break;
-			// ...
-		}
-
-		VkPipelineShaderStageCreateInfo shaderStageInfo{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = toShaderStageFlagBits(stage.stage),
-			.module = module,
-			.pName = stage.entryPoint.c_str()
-		};
-
-		stages.emplace_back(shaderStageInfo);
-	}
-
-	if (hasCompute && (hasVertex || hasFragment)) {
-		EMBER_LOG_ERROR("Technique '{}': cannot mix compute stage with graphics stages", desc.name);
-		return false;
-	}
-	if (!hasCompute && !hasVertex) {
-		EMBER_LOG_ERROR("Technique '{}': graphics techniques require at least a vertex stage", desc.name);
+bool DefaultVulkanResourceBuilder::buildShader(const ShaderDesc& desc, ShaderRecord& record) {
+	VkShaderModule module = VK_NULL_HANDLE;
+	if (!shaderCompiler_->compileShaderModule(desc, module)) {
+		EMBER_LOG_ERROR("Technique '{}': failed to compile shader stage '{}'", desc.name, desc.sourcePath);
 		return false;
 	}
 
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-
-	pipelineInfo.stageCount = static_cast<uint32_t>(stages.size());
-	pipelineInfo.pStages = stages.data();
-
-	vkCreateGraphicsPipelines(context_->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &technique.pipeline);
-
-	cleanup.dismissAll();
+	record.module = module;
+	record.type = toShaderStageFlagBits(desc.type);
 
 	return true;
 }
 
-bool DefaultVulkanResourceBuilder::buildMaterial(const MaterialDesc& desc, const TechniqueRecord& technique,
-	MaterialRecord& material) {
+bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
+	VulkanPipelineBuilder builder;
+
+	builder
+		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.vertex))
+		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.fragment))
+		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.compute));
+
+	builder.validate();
+
+	return builder
+		.withDevice(context_->getDevice())
+		.build(technique.pipeline);
+}
+
+bool DefaultVulkanResourceBuilder::buildMaterial(const MaterialDesc& desc, MaterialRecord& material) {
+	//const auto technique = resourceResolver->resolveTechnique(desc.technique);
+
 	throw std::runtime_error("Not implemented");
 }
 
@@ -117,21 +89,16 @@ bool DefaultVulkanResourceBuilder::buildVertexFormat(const VertexFormatDesc& des
 	return false;
 }
 
+void DefaultVulkanResourceBuilder::destroyShader(ShaderRecord& record) {
+	if (record.module != VK_NULL_HANDLE) {
+		shaderCompiler_->destroyShaderModule(record.module);
+		record.module = VK_NULL_HANDLE;
+	}
+}
+
 void DefaultVulkanResourceBuilder::destroyTechnique(TechniqueRecord& technique) {
-	if (technique.fragModule == VK_NULL_HANDLE) {
-		shaderCompiler_->destroyShaderModule(technique.fragModule);
-		technique.fragModule = VK_NULL_HANDLE;
-	}
-
-	if (technique.vertModule == VK_NULL_HANDLE) {
-		shaderCompiler_->destroyShaderModule(technique.vertModule);
-		technique.vertModule = VK_NULL_HANDLE;
-	}
-
-	if (technique.computeModule == VK_NULL_HANDLE) {
-		shaderCompiler_->destroyShaderModule(technique.computeModule);
-		technique.computeModule = VK_NULL_HANDLE;
-	}
+	vkDestroyPipeline(context_->getDevice(), technique.pipeline, nullptr);
+	technique.pipeline = VK_NULL_HANDLE;
 }
 
 void DefaultVulkanResourceBuilder::destroyMaterial(MaterialRecord& material) {
@@ -143,25 +110,41 @@ void DefaultVulkanResourceBuilder::destroyGeometry(GeometryRecord& geometry, Geo
 }
 
 void DefaultVulkanResourceBuilder::destroyVertexFormat(VertexFormatRecord& record) {
+
+}
+
+bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
+	VulkanPipelineBuilder pipelineBuilder;
+
+	pipelineBuilder
+		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::GenericTransform))
+		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::OpaquePBR))
+		.withDevice(context_->getDevice())
+		.build(technique.pipeline);
 	
+	return true;
 }
 
-bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const TechniqueRecord& technique) {
-	return false;
+bool DefaultVulkanResourceBuilder::buildTransparentTechnique(const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
+	VulkanPipelineBuilder pipelineBuilder;
+
+	pipelineBuilder
+		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::GenericTransform))
+		.withShaderStage(resourceResolver.resolveShader(BuiltinShader::OpaquePBR))
+		.withDevice(context_->getDevice())
+		.build(technique.pipeline);
+
+	return true;
 }
 
-bool DefaultVulkanResourceBuilder::buildTransparentTechnique(const TechniqueRecord& technique) {
-	return false;
-}
-
-VkShaderStageFlagBits DefaultVulkanResourceBuilder::toShaderStageFlagBits(ShaderStage stage) {
-	switch (stage) {
-	case ShaderStage::Vertex: return VK_SHADER_STAGE_VERTEX_BIT;
-	case ShaderStage::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
-	case ShaderStage::Compute: return VK_SHADER_STAGE_COMPUTE_BIT;
-	case ShaderStage::Geometry: return VK_SHADER_STAGE_GEOMETRY_BIT;
-	case ShaderStage::TessellationControl: return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-	case ShaderStage::TessellationEvaluation: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+VkShaderStageFlagBits DefaultVulkanResourceBuilder::toShaderStageFlagBits(ShaderType type) {
+	switch (type) {
+	case ShaderType::Vertex: return VK_SHADER_STAGE_VERTEX_BIT;
+	case ShaderType::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
+	case ShaderType::Compute: return VK_SHADER_STAGE_COMPUTE_BIT;
+	case ShaderType::Geometry: return VK_SHADER_STAGE_GEOMETRY_BIT;
+	case ShaderType::TessellationControl: return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+	case ShaderType::TessellationEvaluation: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 	}
 
 	throw std::runtime_error("Unsupported shader stage");

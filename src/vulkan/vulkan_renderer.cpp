@@ -185,7 +185,7 @@ void VulkanRenderer::submitPass(const RendererPass& pass) {
 
     for (const auto& packet : pass.queue) {
         if (packet.materialId != currentMaterial) {
-            auto material = resourceCache_->ResolveMaterial(packet.materialId);
+            auto material = resourceCache_->resolveMaterial(packet.materialId);
             currentMaterial = packet.materialId;
         }
         // bind per-draw data, vkCmdDrawIndexed, etc.
@@ -527,12 +527,16 @@ RendererPtr createRenderer(const RendererConfig& config, ResourceFileProviderPtr
 
 	auto resourceBuilder = std::make_unique<DefaultVulkanResourceBuilder>(
 		context, 
-		std::move(shaderCompiler), 
-		std::move(cannedResourceProvider), 
+        std::move(shaderCompiler), 
 		fileProvider);
 
     ResourceCacheConfig resourceCacheConfig;
-    auto resourceCache = std::make_shared<VulkanResourceCache>(resourceCacheConfig, context, std::move(resourceBuilder));
+    auto resourceCache = std::make_shared<VulkanResourceCache>(
+        resourceCacheConfig, 
+        context, 
+        std::move(resourceBuilder),
+        std::move(cannedResourceProvider)
+        );
 
     auto renderer = std::make_unique<VulkanRenderer>(config, context, resourceCache);
     if (renderer->initialize(surfaceProvider)) {

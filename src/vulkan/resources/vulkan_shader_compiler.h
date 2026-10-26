@@ -4,7 +4,7 @@
 
 #include <resource_types.h>
 
-#include "vulkan_resource_defs.h"
+using ShaderDesc = ember::resources::ShaderDesc;
 
 namespace ember::vulkan {
 
@@ -16,7 +16,7 @@ class VulkanShaderCompiler {
 public:
     virtual ~VulkanShaderCompiler() = default;
 
-    virtual bool compileShaderStage(const resources::ShaderStageDesc& stageDesc, VkShaderModule& module) = 0;
+    virtual bool compileShaderModule(const ShaderDesc& stageDesc, VkShaderModule& module) = 0;
     virtual void destroyShaderModule(VkShaderModule module) = 0;
 };
 

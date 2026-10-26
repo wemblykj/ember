@@ -11,6 +11,18 @@ namespace BuiltinResourceGroup {
     constexpr ResourceGroupID Custom = 0x8000;
 }
 
+/// @brief Built-in shader IDs for common rendering shaders.
+namespace BuiltinShader {
+	constexpr ShaderID Invalid = -1;
+	constexpr ShaderID Undefined = 0;
+    constexpr ShaderID Vertex = 0x1000;
+    constexpr ShaderID GenericTransform = Vertex;
+    constexpr ShaderID Fragment = 0x2000;
+	constexpr ShaderID OpaquePBR = Fragment;
+	/// @brief Base value for custom shaders.
+	constexpr ShaderID Custom = 0x8000;
+}
+
 /// @brief Built-in technique IDs for common rendering techniques.
 namespace BuiltinTechnique {
     constexpr TechniqueID Invalid = -1;

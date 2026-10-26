@@ -23,13 +23,13 @@ public:
     	std::shared_ptr<VulkanContext> context,
         std::shared_ptr<resources::ResourceFileProvider> fileProvider);
 
-    bool compileShaderStage(const resources::ShaderStageDesc& stageDesc, VkShaderModule& module) override;
+    bool compileShaderModule(const resources::ShaderDesc& stageDesc, VkShaderModule& module) override;
     void destroyShaderModule(VkShaderModule module) override;
 
 private:
-    bool compileShaderStage(const std::string& sourcePath, shaderc_shader_kind kind, VkShaderModule& module);
+    bool compileShaderModule(const std::string& sourcePath, shaderc_shader_kind kind, VkShaderModule& module);
 
-    static shaderc_shader_kind toShaderKind(resources::ShaderStage stage);
+    static shaderc_shader_kind toShaderKind(resources::ShaderType type);
 
     shaderc::CompileOptions options_;
     std::shared_ptr<VulkanContext> context_;

@@ -1,5 +1,7 @@
 add_library(ember_resources STATIC
+dictionary_based_file_provider.cpp
     default_canned_resource_provider.cpp
+    canned_resource_file_provider.cpp
 )
 
 target_sources(ember_resources PUBLIC

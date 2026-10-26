@@ -19,7 +19,7 @@ ShadercVulkanShaderCompiler::ShadercVulkanShaderCompiler(
 	compiler_ = std::make_unique<shaderc::Compiler>();
 }
 
-bool ShadercVulkanShaderCompiler::compileShaderStage(const std::string& sourcePath, shaderc_shader_kind kind,
+bool ShadercVulkanShaderCompiler::compileShaderModule(const std::string& sourcePath, shaderc_shader_kind kind,
                                                        VkShaderModule& shaderModule) {
 	auto source = fileProvider_->readText(sourcePath);
 	if (!source) {
@@ -44,24 +44,24 @@ bool ShadercVulkanShaderCompiler::compileShaderStage(const std::string& sourcePa
 	return true;
 }
 
-bool ShadercVulkanShaderCompiler::compileShaderStage(const ShaderStageDesc& stageDesc, VkShaderModule& module) {
-	const auto kind = toShaderKind(stageDesc.stage);
+bool ShadercVulkanShaderCompiler::compileShaderModule(const ShaderDesc& shaderDesc, VkShaderModule& module) {
+	const auto kind = toShaderKind(shaderDesc.type);
 
-	return compileShaderStage(stageDesc.sourcePath, kind, module);
+	return compileShaderModule(shaderDesc.sourcePath, kind, module);
 }
 
 void ShadercVulkanShaderCompiler::destroyShaderModule(VkShaderModule module) {
 	context_->destroyShaderModule(module);
 }
 
-shaderc_shader_kind ShadercVulkanShaderCompiler::toShaderKind(ShaderStage stage) {
-	switch (stage) {
-	case ShaderStage::Vertex: return shaderc_vertex_shader;
-	case ShaderStage::Fragment: return shaderc_fragment_shader;
-	case ShaderStage::Compute: return shaderc_compute_shader;
-	case ShaderStage::Geometry: return shaderc_geometry_shader;
-	case ShaderStage::TessellationControl: return shaderc_tess_control_shader;
-	case ShaderStage::TessellationEvaluation: return shaderc_tess_evaluation_shader;
+shaderc_shader_kind ShadercVulkanShaderCompiler::toShaderKind(ShaderType type) {
+	switch (type) {
+	case ShaderType::Vertex: return shaderc_vertex_shader;
+	case ShaderType::Fragment: return shaderc_fragment_shader;
+	case ShaderType::Compute: return shaderc_compute_shader;
+	case ShaderType::Geometry: return shaderc_geometry_shader;
+	case ShaderType::TessellationControl: return shaderc_tess_control_shader;
+	case ShaderType::TessellationEvaluation: return shaderc_tess_evaluation_shader;
 	}
 
 	throw std::runtime_error("Unsupported shader stage");

@@ -20,6 +20,8 @@ public:
     /// @brief Release a previously created resource group, freeing any associated resources. After calling this method, the specified resource group ID is no longer valid.
     virtual void releaseResourceGroup(ResourceGroupID group) = 0;
 
+	/// @brief Check if a shader with the specified ShaderID is currently registered and valid. Returns true if the shader exists, false otherwise.
+    virtual bool assertShader(ShaderID id) = 0;
     /// @brief Check if a technique with the specified TechniqueID is currently registered and valid. Returns true if the technique exists, false otherwise.
     virtual bool assertTechnique(TechniqueID id) = 0;
     /// @brief Check if a material with the specified MaterialID is currently registered and valid. Returns true if the material exists, false otherwise.
@@ -29,6 +31,8 @@ public:
     /// @brief Check if a vertex format with the specified VertexFormatID is currently registered and valid. Returns true if the vertex format exists, false otherwise.
     virtual bool assertVertexFormat(VertexFormatID id) = 0;
 
+	/// @brief Register a new shader with the specified description. Shaders define programmable stages of the rendering pipeline (e.g., vertex, fragment). Returns a unique ShaderID that can be used to reference this shader in techniques.
+	virtual ShaderID registerShader(const ShaderDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
     /// @brief Register a new rendering technique with the specified description. Techniques define the fixed-function and shader state used for rendering. Returns a unique TechniqueID that can be used to reference this technique in materials and render passes.
     virtual TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group = BuiltinResourceGroup::Global) = 0;
     /// @brief Register a new material with the specified description. Materials reference techniques and provide parameter bindings for rendering. Returns a unique MaterialID that can be used in render packets.
