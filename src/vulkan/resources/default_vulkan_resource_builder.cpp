@@ -67,11 +67,15 @@ bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, con
 		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.fragment))
 		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.compute));
 
-	builder.validate();
+	if (!builder.validate()) {
+		return false;
+	}
 
-	return builder
+	technique.pipeline = builder
 		.withDevice(context_->getDevice())
-		.build(technique.pipeline);
+		.build();
+
+	return true;
 }
 
 bool DefaultVulkanResourceBuilder::buildMaterial(const MaterialDesc& desc, MaterialRecord& material) {
@@ -110,17 +114,16 @@ void DefaultVulkanResourceBuilder::destroyGeometry(GeometryRecord& geometry, Geo
 }
 
 void DefaultVulkanResourceBuilder::destroyVertexFormat(VertexFormatRecord& record) {
-
 }
 
 bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
 	VulkanPipelineBuilder pipelineBuilder;
 
-	pipelineBuilder
+	technique.pipeline = pipelineBuilder
 		.withShaderStage(resourceResolver.resolveShader(CannedShader::GenericTransform))
 		.withShaderStage(resourceResolver.resolveShader(CannedShader::OpaquePBR))
 		.withDevice(context_->getDevice())
-		.build(technique.pipeline);
+		.build();
 	
 	return true;
 }
@@ -128,11 +131,11 @@ bool DefaultVulkanResourceBuilder::buildOpaqueTechnique(const VulkanResourceReso
 bool DefaultVulkanResourceBuilder::buildTransparentTechnique(const VulkanResourceResolver& resourceResolver, TechniqueRecord& technique) {
 	VulkanPipelineBuilder pipelineBuilder;
 
-	pipelineBuilder
+	technique.pipeline = pipelineBuilder
 		.withShaderStage(resourceResolver.resolveShader(CannedShader::GenericTransform))
 		.withShaderStage(resourceResolver.resolveShader(CannedShader::OpaquePBR))
 		.withDevice(context_->getDevice())
-		.build(technique.pipeline);
+		.build();
 
 	return true;
 }

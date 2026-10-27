@@ -38,9 +38,10 @@ target_sources(ember_vulkan PRIVATE
     context/ranked_physical_device_selector.cpp
     context/default_physical_device_enumerator.cpp
     context/default_physical_device_selector.cpp
+    resources/vulkan_pipeline_builder.cpp
     resources/vulkan_resource_cache.cpp
     resources/default_vulkan_resource_builder.cpp
-    resources/shaderc_vulkan_shader_compiler.cpp
+    resources/shaderc_vulkan_shader_compiler.cpp 
     vulkan_renderer.cpp
 )
 
