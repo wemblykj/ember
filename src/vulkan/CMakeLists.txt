@@ -63,6 +63,7 @@ target_sources(ember_vulkan PUBLIC
         context/default_physical_device_selector.h
         context/ranked_physical_device_selector.h
         presentation/vulkan_surface_provider.h
+        resources/vulkan_pipeline_builder.h
         resources/vulkan_resource_builder.h
         resources/vulkan_resource_defs.h
         vulkan_renderer.h
