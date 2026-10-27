@@ -7,6 +7,7 @@
 #include <logger.h>
 
 #include "vulkan_resource_defs.h"
+#include <action.h>
 
 namespace ember::vulkan {
 
@@ -18,180 +19,304 @@ public:
 		return *this;
 	}
 
-	VulkanPipelineBuilder& withBlendState(const VkPipelineColorBlendStateCreateInfo& blendState) {
-		colorBlendState_ = blendState;
+	VulkanPipelineBuilder& configureColorBlendState(core::Action<VkPipelineColorBlendStateCreateInfo&>::Callback configure) {
+		configureColorBlendState_ += configure;
+
 		return *this;
 	}
 
-	VulkanPipelineBuilder& withBlendAttachmentState(const VkPipelineColorBlendAttachmentState& attachmentState) {
-		colorBlendAttachments_.push_back(attachmentState);
+	VulkanPipelineBuilder& addBlendAttachmentState(core::Action<VkPipelineColorBlendAttachmentState&>::Callback configure) {
+		configureColorBlendAttachments_.emplace_back() += configure;
+
 		return *this;
 	}
 
-	VulkanPipelineBuilder& withOpaqueBlendState() {
-		VkPipelineColorBlendAttachmentState attachmentState{};
-		attachmentState.blendEnable = VK_FALSE;
-		attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VulkanPipelineBuilder& addOpaqueBlendState(core::Action<VkPipelineColorBlendAttachmentState&>::OptionalCallback configure = {}) {
+		configureColorBlendState([](VkPipelineColorBlendStateCreateInfo& blendState) {
+			blendState.logicOpEnable = VK_FALSE;
+			blendState.logicOp = VK_LOGIC_OP_COPY;
+			});
+
+		addBlendAttachmentState([&configure](VkPipelineColorBlendAttachmentState& attachmentState) {
+			attachmentState.blendEnable = VK_FALSE;
+			attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		
-		return withBlendAttachmentState(attachmentState);
+			configure.invoke(attachmentState);
+			});
+		
+		return *this;
 	}
 
-	VulkanPipelineBuilder& withTransparentBlendState() {
-		VkPipelineColorBlendAttachmentState attachmentState{};
-		attachmentState.blendEnable = VK_TRUE;
-		attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-		attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		attachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-		attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VulkanPipelineBuilder& addTransparentBlendState(core::Action<VkPipelineColorBlendAttachmentState&>::OptionalCallback configure = {}) {
+		return addBlendAttachmentState([&configure](VkPipelineColorBlendAttachmentState& attachmentState) {
+			attachmentState.blendEnable = VK_TRUE;
+			attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			attachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
-		return withBlendAttachmentState(attachmentState);
+			configure.invoke(attachmentState);
+			});
 	}
 
-	VulkanPipelineBuilder& withDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
-		depthStencilState_ = depthStencilState;
+	VulkanPipelineBuilder& configureDepthStencilState(core::Action<VkPipelineDepthStencilStateCreateInfo&>::Callback configure) {
+		configureDepthStencilState_ += configure;
+
 		return *this;
 	}
 
 	VulkanPipelineBuilder& withDepthTest(bool enable) {
-		auto depthStencilState = getOrCreateDepthStencilState();
-		depthStencilState.depthTestEnable = enable ? VK_TRUE : VK_FALSE;
-		
-		return withDepthStencilState(depthStencilState);
+		return configureDepthStencilState([enable](VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
+			depthStencilState.depthTestEnable = enable ? VK_TRUE : VK_FALSE;
+		});
 	}
 
 	VulkanPipelineBuilder& withDepthWrite(bool enable) {
-		auto depthStencilState = getOrCreateDepthStencilState();
-		depthStencilState.depthWriteEnable = enable ? VK_TRUE : VK_FALSE;
-		
-		return withDepthStencilState(depthStencilState);
+		return configureDepthStencilState([enable](VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
+			depthStencilState.depthWriteEnable = enable ? VK_TRUE : VK_FALSE;
+			});
 	}
 
 	VulkanPipelineBuilder& withDepthTestAndWrite(bool enable) {
-		auto depthStencilState = getOrCreateDepthStencilState();
-		depthStencilState.depthTestEnable = enable ? VK_TRUE : VK_FALSE;
-		depthStencilState.depthWriteEnable = enable ? VK_TRUE : VK_FALSE;
-		
-		return withDepthStencilState(depthStencilState);
+		return configureDepthStencilState([enable](VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
+			depthStencilState.depthTestEnable = enable ? VK_TRUE : VK_FALSE;
+			depthStencilState.depthWriteEnable = enable ? VK_TRUE : VK_FALSE;
+		});
 	}
 
-	VulkanPipelineBuilder& withShaderStage(const ShaderRecord& record) {
-		withShaderStage(
-			VkPipelineShaderStageCreateInfo{
-					.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					.stage = record.type,
-					.module = record.module,
-					.pName = "main" // Assuming entry point is "main"
-			});
+	VulkanPipelineBuilder& addShaderStage(core::Action<VkPipelineShaderStageCreateInfo&>::Callback configure) {
+		configureShaderStages_.emplace_back() += configure;
 
 		return *this;
 	}
 
-	VulkanPipelineBuilder& withShaderStage(const VkPipelineShaderStageCreateInfo& shaderInfo) {
-		shaderStages_.emplace_back(shaderInfo);
-
-		if (shaderInfo.stage == VK_SHADER_STAGE_VERTEX_BIT) {
-			hasVertex_ = true;
-		}
-		else if (shaderInfo.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
-			hasFragment_ = true;
-		}
-		else if (shaderInfo.stage == VK_SHADER_STAGE_COMPUTE_BIT) {
-			hasCompute_ = true;
-		}
+	VulkanPipelineBuilder& withShaderStage(const ShaderRecord& record) {
+		addShaderStage([&record](auto& shaderInfo) {
+			shaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderInfo.stage = record.type;
+			shaderInfo.module = record.module;
+			shaderInfo.pName = "main"; // Assuming entry point is "main"
+		});
 
 		return *this;
 	}
 
 	bool validate() {
+		if (!validateFundamentals()) {
+			return false;
+		}
+
+		if (!validateShaderStages()) {
+			return false;
+		}
+
+		if (!validateColorBlendState()) {
+			return false;
+		}
+		return true;
+	}
+
+	VkPipeline build() {
+		if (!validateFundamentals()) {
+			throw std::runtime_error("Pipeline validation failed");
+		}
+
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
+		bool hasVertex = false, hasFragment = false, hasCompute = false;
+
+		for (auto& configure : configureShaderStages_) {
+			VkPipelineShaderStageCreateInfo shaderInfo{};
+			configure.invoke(shaderInfo);
+
+			if (shaderInfo.stage == VK_SHADER_STAGE_VERTEX_BIT) {
+				hasVertex = true;
+			}
+			else if (shaderInfo.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+				hasFragment = true;
+			}
+			else if (shaderInfo.stage == VK_SHADER_STAGE_COMPUTE_BIT) {
+				hasCompute = true;
+			}
+
+			shaderStages.push_back(shaderInfo);
+		}
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{
+			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+			.stageCount = static_cast<uint32_t>(shaderStages.size()),
+			.pStages = shaderStages.data()
+		};
+
+		if (configureColorBlendState_ || !configureColorBlendAttachments_.empty()) {
+
+			VkPipelineColorBlendStateCreateInfo colorBlendState = buildColorBlendState();
+
+			if (!validateColorBlendState(colorBlendState)) {
+				throw std::runtime_error("Pipeline validation failed: invalid blend state");
+			}
+
+			pipelineInfo.pColorBlendState = &colorBlendState;
+		}
+
+		if (configureDepthStencilState_) {
+			VkPipelineDepthStencilStateCreateInfo depthStencilState = buildDepthStencilState();
+
+			if (!validateDepthStencilState(depthStencilState)) {
+				throw std::runtime_error("Pipeline validation failed: invalid depth stencil state");
+			}
+
+			pipelineInfo.pDepthStencilState = &depthStencilState;
+		}
+
+		VkPipeline pipeline;
+		vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
+
+		return pipeline;
+	}
+
+private:	
+	VkPipelineColorBlendStateCreateInfo buildColorBlendState() {
+		VkPipelineColorBlendStateCreateInfo colorBlendState{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		};
+
+		if (configureColorBlendState_) {
+			configureColorBlendState_.invoke(colorBlendState);
+		}
+
+		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+		for (auto& configureAttachment : configureColorBlendAttachments_) {
+			VkPipelineColorBlendAttachmentState attachmentState{};
+			configureAttachment.invoke(attachmentState);
+			colorBlendAttachments.push_back(attachmentState);
+		}
+
+		colorBlendState.attachmentCount = static_cast<uint32_t>(colorBlendAttachments.size());
+		colorBlendState.pAttachments = colorBlendAttachments.data();
+
+		return colorBlendState;
+	}
+
+	VkPipelineDepthStencilStateCreateInfo buildDepthStencilState() {
+		VkPipelineDepthStencilStateCreateInfo depthStencilState{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		};
+
+		if (configureDepthStencilState_) {
+			configureDepthStencilState_.invoke(depthStencilState);
+		}
+
+		return depthStencilState;
+	}
+	bool validateShaderStages(bool hasVertex, bool hasFragment, bool hasCompute) {
+		if (hasCompute && (hasVertex || hasFragment)) {
+			EMBER_LOG_ERROR("Cannot mix compute stage with graphics stages");
+			return false;
+		}
+		if (!hasCompute && !hasVertex) {
+			EMBER_LOG_ERROR("Graphics pipeline requires at least a vertex stage");
+			return false;
+		}
+		return true;
+	}
+
+	bool validateShaderStages() {
+		bool hasVertex = false, hasFragment = false, hasCompute = false;
+		for (auto& configure : configureShaderStages_) {
+			VkPipelineShaderStageCreateInfo shaderInfo{};
+			configure.invoke(shaderInfo);
+			if (shaderInfo.stage == VK_SHADER_STAGE_VERTEX_BIT) {
+				hasVertex = true;
+			}
+			else if (shaderInfo.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+				hasFragment = true;
+			}
+			else if (shaderInfo.stage == VK_SHADER_STAGE_COMPUTE_BIT) {
+				hasCompute = true;
+			}
+		}
+
+		return validateShaderStages(hasVertex, hasFragment, hasCompute);
+	}
+
+	bool validateFundamentals() {
 		if (device_ == VK_NULL_HANDLE) {
 			EMBER_LOG_ERROR("Pipeline builder requires a valid Vulkan device");
 			return false;
 		}
 
-		for (auto& attachment : colorBlendAttachments_) {
-			// Ensure that the attachment is valid
-			if (attachment.colorWriteMask == 0) {
-				EMBER_LOG_ERROR("Color blend attachment has no color write mask set");
-				return false;
-			}
-		}
-
-		if (shaderStages_.empty()) {
+		if (configureShaderStages_.empty()) {
 			EMBER_LOG_ERROR("Pipeline must have at least one shader stage");
 			return false;
 		}
 
-		if (hasCompute_ && (hasVertex_ || hasFragment_)) {
-			EMBER_LOG_ERROR("Cannot mix compute stage with graphics stages");
+		return true;
+	}
+
+	bool validateColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& attachmentState) {
+		if (attachmentState.blendEnable && attachmentState.colorWriteMask == 0) {
+			EMBER_LOG_ERROR("Color blend attachment state has blending enabled but no color write mask set");
 			return false;
 		}
-		if (!hasCompute_ && !hasVertex_) {
-			EMBER_LOG_ERROR("Graphics pipeline requires at least a vertex stage");
+		return true;
+	}
+
+	bool validateColorBlendState(const VkPipelineColorBlendStateCreateInfo& colorBlendState) {
+		if (colorBlendState.logicOpEnable && colorBlendState.attachmentCount == 0) {
+			EMBER_LOG_ERROR("Color blend state has logicOp enabled but no attachments set");
 			return false;
+		}
+
+		for (uint32_t i = 0; i < colorBlendState.attachmentCount; ++i) {
+			const VkPipelineColorBlendAttachmentState& attachmentState = colorBlendState.pAttachments[i];
+			if (!validateColorBlendAttachmentState(attachmentState)) {
+				return false;
+			}
 		}
 
 		return true;
 	}
-	bool build(VkPipeline& pipeline) {
-		if (!validate()) {
-			pipeline = VK_NULL_HANDLE;
 
-			return false;
+	bool validateColorBlendState() {
+
+		if (configureColorBlendState_ || !configureColorBlendAttachments_.empty()) {
+			VkPipelineColorBlendStateCreateInfo colorBlendState = buildColorBlendState();
+
+			if (!validateColorBlendState(colorBlendState)) {
+				return false;
+			}
 		}
-		
-		VkGraphicsPipelineCreateInfo pipelineInfo{
-			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-			.stageCount = static_cast<uint32_t>(shaderStages_.size()),
-			.pStages = shaderStages_.data()
-		};
-
-		if (!colorBlendAttachments_.empty()) {
-			VkPipelineColorBlendStateCreateInfo colorBlendState = getOrCreateColorBlendState();
-			colorBlendState.attachmentCount = static_cast<uint32_t>(colorBlendAttachments_.size());
-			colorBlendState.pAttachments = colorBlendAttachments_.data();
-			pipelineInfo.pColorBlendState = &colorBlendState;
-		} else {
-			pipelineInfo.pColorBlendState = colorBlendState_ ? &*colorBlendState_ : nullptr;
-		}
-
-		pipelineInfo.pDepthStencilState = depthStencilState_ ? &*depthStencilState_ : nullptr;
-
-		vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
 
 		return true;
 	}
 
-private:
-	VkPipelineColorBlendStateCreateInfo getOrCreateColorBlendState() {
-		return colorBlendState_.value_or(VkPipelineColorBlendStateCreateInfo{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-			.logicOpEnable = VK_FALSE,
-			.attachmentCount = 0,
-			.pAttachments = nullptr // No attachments by default
-			});
-	};
+	bool validateDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
+		if (depthStencilState.depthTestEnable && !depthStencilState.depthWriteEnable) {
+			EMBER_LOG_WARN("Depth test is enabled but depth write is disabled");
+		}
 
-	VkPipelineDepthStencilStateCreateInfo getOrCreateDepthStencilState() {
-		return depthStencilState_.value_or(VkPipelineDepthStencilStateCreateInfo{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-			.depthTestEnable = VK_TRUE,
-			.depthWriteEnable = VK_TRUE,
-			.depthCompareOp = VK_COMPARE_OP_LESS
-		});
-	};
-	
+		return true;
+	}
+
+	bool validateDepthStencilState() {
+		if (configureDepthStencilState_) {
+			VkPipelineDepthStencilStateCreateInfo depthStencilState = buildDepthStencilState();
+			if (!validateDepthStencilState(depthStencilState)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	VkDevice device_ = VK_NULL_HANDLE;
-	std::optional<VkPipelineColorBlendStateCreateInfo> colorBlendState_;
-	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments_;
-	std::optional<VkPipelineDepthStencilStateCreateInfo> depthStencilState_;
-	std::vector<VkPipelineShaderStageCreateInfo> shaderStages_;
-	bool hasVertex_ = false; 
-	bool hasFragment_ = false; 
-	bool hasCompute_ = false;
+	core::Action<VkPipelineColorBlendStateCreateInfo&> configureColorBlendState_;
+	std::vector<core::Action<VkPipelineColorBlendAttachmentState&>> configureColorBlendAttachments_;
+	core::Action<VkPipelineDepthStencilStateCreateInfo&> configureDepthStencilState_;
+	std::vector<core::Action<VkPipelineShaderStageCreateInfo&>> configureShaderStages_;
 };
 
 }
