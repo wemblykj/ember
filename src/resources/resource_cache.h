@@ -21,15 +21,15 @@ public:
     virtual void releaseResourceGroup(ResourceGroupID group) = 0;
 
 	/// @brief Check if a shader with the specified ShaderID is currently registered and valid. Returns true if the shader exists, false otherwise.
-    virtual bool assertShader(ShaderID id) = 0;
+    virtual bool assertShader(ShaderID id) const = 0;
     /// @brief Check if a technique with the specified TechniqueID is currently registered and valid. Returns true if the technique exists, false otherwise.
-    virtual bool assertTechnique(TechniqueID id) = 0;
+    virtual bool assertTechnique(TechniqueID id) const = 0;
     /// @brief Check if a material with the specified MaterialID is currently registered and valid. Returns true if the material exists, false otherwise.
-    virtual bool assertMaterial(MaterialID id) = 0;
+    virtual bool assertMaterial(MaterialID id) const = 0;
     /// @brief Check if geometry with the specified GeometryID is currently registered and valid. Returns true if the geometry exists, false otherwise.
-    virtual bool assertGeometry(GeometryID id) = 0;
+    virtual bool assertGeometry(GeometryID id) const = 0;
     /// @brief Check if a vertex format with the specified VertexFormatID is currently registered and valid. Returns true if the vertex format exists, false otherwise.
-    virtual bool assertVertexFormat(VertexFormatID id) = 0;
+    virtual bool assertVertexFormat(VertexFormatID id) const = 0;
 
 	/// @brief Register a new shader with the specified description. Shaders define programmable stages of the rendering pipeline (e.g., vertex, fragment). Returns a unique ShaderID that can be used to reference this shader in techniques.
 	virtual ShaderID registerShader(const ShaderDesc& desc, ResourceGroupID group = CannedResourceGroup::Global) = 0;

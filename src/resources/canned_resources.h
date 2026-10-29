@@ -13,20 +13,24 @@ namespace CannedResourceGroup {
 
 /// @brief Built-in shader IDs for common rendering shaders.
 namespace CannedShader {
-	constexpr ShaderID Invalid = -1;
-	constexpr ShaderID Undefined = 0;
+	constexpr ShaderID Invalid = 0x80000000;
+	constexpr ShaderID Undefined = Invalid + 1;
     constexpr ShaderID Vertex = 0x1000;
-    constexpr ShaderID GenericTransform = Vertex;
+    constexpr ShaderID InvalidVertex = Invalid | Vertex;
+    constexpr ShaderID UndefinedVertex = Undefined | Vertex;
+    constexpr ShaderID GenericTransform = Vertex + 1;
     constexpr ShaderID Fragment = 0x2000;
-	constexpr ShaderID OpaquePBR = Fragment;
+    constexpr ShaderID InvalidFragment = Invalid | Fragment;
+    constexpr ShaderID UndefinedFragment = Undefined | Fragment;
+	constexpr ShaderID OpaquePBR = Fragment + 1;
 	/// @brief Base value for custom shaders.
 	constexpr ShaderID Custom = 0x8000;
 }
 
 /// @brief Built-in technique IDs for common rendering techniques.
 namespace CannedTechnique {
-    constexpr TechniqueID Invalid = -1;
-    constexpr TechniqueID Undefined = 0;
+    constexpr TechniqueID Invalid = 0x80000000;
+    constexpr TechniqueID Undefined = Invalid + 1;
     constexpr TechniqueID Opaque = 1;
     constexpr TechniqueID Transparent = 2;
     /// @brief Base value for custom techniques.
@@ -35,16 +39,16 @@ namespace CannedTechnique {
 
 /// @brief Built-in material IDs for common rendering materials.
 namespace CannedMaterial {
-    constexpr MaterialID Invalid = -1;
-    constexpr MaterialID Undefined = 0;
+    constexpr MaterialID Invalid = 0x80000000;
+    constexpr MaterialID Undefined = Invalid + 1;
     /// @brief Base value for custom materials.
     constexpr MaterialID Custom = 0x8000;
 }
 
 /// @brief Built-in geometry IDs for common rendering geometries.
 namespace CannedGeometry {
-    constexpr GeometryID Invalid = -1;
-    constexpr GeometryID Undefined = 0;
+    constexpr GeometryID Invalid = 0x80000000;
+    constexpr GeometryID Undefined = Invalid + 1;
     constexpr GeometryID UnitQuad = 1;
     constexpr GeometryID FullscreenQuad = 2;
     /// @brief Base value for custom geometries.
@@ -52,7 +56,8 @@ namespace CannedGeometry {
 }
 
 namespace CannedVertexFormat {
-    constexpr VertexFormatID Undefined = 0;
+    constexpr VertexFormatID Invalid = 0x8000;
+    constexpr VertexFormatID Undefined = Invalid + 1;
     constexpr VertexFormatID PositionUV = 1;
     /// @brief Base value for custom vertex formats.
     constexpr VertexFormatID Custom = 0x8000;

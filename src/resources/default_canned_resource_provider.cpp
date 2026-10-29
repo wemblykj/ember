@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include <logger.h>
+
 namespace {
 	struct QuadVertex {
 		float position[2];  // VK_FORMAT_R32G32_SFLOAT
@@ -24,27 +26,81 @@ bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc&
 	{
 	case CannedShader::Invalid:
 	case CannedShader::Undefined:// Add shader stages for opaque technique
-		throw std::invalid_argument("Invalid or undefined shader ID");
-	case CannedShader::GenericTransform:
+		throw std::runtime_error("Canned shader ID is invalid or undefined. Cannot provide descriptor.");
+
+	case CannedShader::InvalidVertex:
+		desc.name = "canned.shader.invalid_vertex";
 		desc.type = ShaderType::Vertex;
 		desc.entryPoint = "main";
 		desc.sourcePath = "shaders/canned/generic_transform.vert";
 		break;
-	case CannedShader::OpaquePBR:
+
+	case CannedShader::UndefinedVertex:
+		desc.name = "canned.shader.undefined_vertex";
+		desc.type = ShaderType::Vertex;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/generic_transform.vert";
+		break;
+
+	case CannedShader::GenericTransform:
+		desc.name = "canned.shader.generic_transform";
+		desc.type = ShaderType::Vertex;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/generic_transform.vert";
+		break;
+
+	case CannedShader::InvalidFragment:
+		desc.name = "canned.shader.invalid_fragment";
 		desc.type = ShaderType::Fragment;
 		desc.entryPoint = "main";
 		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
 		break;
+
+	case CannedShader::UndefinedFragment:
+		desc.name = "canned.shader.undefined_fragment";
+		desc.type = ShaderType::Fragment;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
+		break;
+
+	case CannedShader::OpaquePBR:
+		desc.name = "canned.shader.opaque_pbr";
+		desc.type = ShaderType::Fragment;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
+		break;
+
+	default:
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, TechniqueDesc& desc) {
 	switch (id)
 	{
 		case CannedTechnique::Invalid:
+			desc.name = "canned.technique.invalid";
+			desc.blendMode = core::BlendMode::Opaque;
+			desc.cullMode = core::CullMode::Back;
+			desc.depthTest = true;
+			desc.depthWrite = true;
+			// Add shader stages for opaque technique
+			desc.shaderStages.vertex = CannedShader::InvalidVertex;
+			desc.shaderStages.fragment = CannedShader::InvalidFragment;
+			break;
+
 		case CannedTechnique::Undefined:
+			desc.name = "canned.technique.undefined";
+			desc.blendMode = core::BlendMode::Opaque;
+			desc.cullMode = core::CullMode::Back;
+			desc.depthTest = true;
+			desc.depthWrite = true;
+			// Add shader stages for opaque technique
+			desc.shaderStages.vertex = CannedShader::UndefinedVertex;
+			desc.shaderStages.fragment = CannedShader::UndefinedFragment;
+			break;
 		case CannedTechnique::Opaque:
 			desc.name = "canned.technique.opaque";
 			desc.blendMode = core::BlendMode::Opaque;
@@ -54,7 +110,7 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 			// Add shader stages for opaque technique
 			desc.shaderStages.vertex = CannedShader::GenericTransform;
 			desc.shaderStages.fragment = CannedShader::OpaquePBR;
-			return true;
+			break;
 
 		case CannedTechnique::Transparent:
 			desc.name = "canned.technique.transparent";
@@ -65,12 +121,13 @@ bool DefaultCannedResourceProvider::GetTechniqueDescriptor(TechniqueID id, Techn
 			// Add shader stages for transparent technique
 			desc.shaderStages.vertex = CannedShader::GenericTransform;
 			desc.shaderStages.fragment = CannedShader::OpaquePBR;
-			return true;
+			break;
 	
 		default:
-			break;
+			return false;
 	}
-	return false;
+
+	return true;
 }
 
 bool DefaultCannedResourceProvider::GetMaterialDescriptor(MaterialID id, MaterialDesc& desc) {
@@ -79,17 +136,18 @@ bool DefaultCannedResourceProvider::GetMaterialDescriptor(MaterialID id, Materia
 		case CannedMaterial::Invalid:
 			desc.name = "canned.material.invalid";
 			desc.technique = CannedTechnique::Invalid;
-			return true;
+			return false;
 
 		case CannedMaterial::Undefined:
 			desc.name = "canned.material.undefined";
 			desc.technique = CannedTechnique::Undefined;
-			return true;
+			break;
 
 		default:
-			break;
+			return false;
 	}
-	return false;
+
+	return true;
 }
 
 bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, GeometryDesc& desc) {
@@ -101,7 +159,7 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 			//desc.indexData;
 			desc.indexCount = 0;
 			desc.vertexFormat = CannedVertexFormat::Undefined;
-			return true;
+			break;
 
 		case CannedGeometry::Undefined:
 			desc.name = "canned.geometry.undefined";
@@ -110,7 +168,7 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 			desc.indexCount = 0;
 			desc.indexType = IndexType::Undefined;
 			desc.vertexFormat = CannedVertexFormat::Undefined;
-			return true;
+			break;
 
 		case CannedGeometry::UnitQuad:
 			// Provide vertex and index data for a unit quad
@@ -122,11 +180,12 @@ bool DefaultCannedResourceProvider::GetGeometryDescriptor(GeometryID id, Geometr
 			desc.indexCount = static_cast<uint16_t>(std::size(kUnitQuadIndices));
 			desc.indexType = IndexType::UInt16;
 			desc.vertexFormat = CannedVertexFormat::PositionUV;
-			return true;
-		default:
 			break;
+		default:
+			return false;
 	}
-	return false;
+
+	return true;
 }
 
 bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id, VertexFormatDesc& desc) {
@@ -135,7 +194,8 @@ bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id,
 		case CannedVertexFormat::Undefined:
 			desc.stride = 0;
 			desc.attributes.clear();
-			return true;
+			break;
+
 		case CannedVertexFormat::PositionUV:
 			desc.name = "canned.vertex_format.position_uv";
 			desc.stride = sizeof(QuadVertex);
@@ -143,12 +203,13 @@ bool DefaultCannedResourceProvider::GetVertexFormatDescriptor(VertexFormatID id,
 				{ "position", 0, VertexFormat::R32G32_SFLOAT, 0 },
 				{ "uv", sizeof(float) * 2, VertexFormat::R32G32_SFLOAT, 1 }
 			};
-			return true;
-		default:
 			break;
+
+		default:
+			return false;
 	}
 
-	return false;
+	return true;
 }
 
 } // namespace ember::resources

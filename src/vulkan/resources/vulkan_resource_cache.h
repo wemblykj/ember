@@ -53,11 +53,11 @@ public:
     void clearAllResources() override;
     ResourceGroupID createResourceGroup(const ResourceGroupDesc& desc) override;
     void releaseResourceGroup(ResourceGroupID group) override;
-    bool assertShader(ShaderID id) override;
-    bool assertTechnique(TechniqueID id) override;
-    bool assertMaterial(MaterialID id) override;
-    bool assertGeometry(GeometryID id) override;
-    bool assertVertexFormat(VertexFormatID id) override;
+    bool assertShader(ShaderID id) const override;
+    bool assertTechnique(TechniqueID id) const override;
+    bool assertMaterial(MaterialID id) const override;
+    bool assertGeometry(GeometryID id) const override;
+    bool assertVertexFormat(VertexFormatID id) const override;
 
 	ShaderID registerShader(const ShaderDesc& desc, ResourceGroupID group) override;
     TechniqueID registerTechnique(const TechniqueDesc& desc, ResourceGroupID group) override;
