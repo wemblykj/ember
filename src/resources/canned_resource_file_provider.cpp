@@ -1,4 +1,25 @@
-#include <canned_resource_file_provider.h>
+#include "canned_resource_file_provider.h"
+
+namespace {
+
+const char* generic_transform = R"tag(
+#version 330 core
+layout(location = 0) in vec3 aPos;
+
+void main() {
+    gl_Position = vec4(aPos, 1.0);
+})tag";
+
+const char* solid_white = R"tag(
+#version 330 core
+out vec4 FragColor;
+
+void main() {
+    FragColor = vec4(1.0); // solid white
+}
+)tag";
+
+}
 
 namespace ember::resources {
 
@@ -9,19 +30,31 @@ CannedResourceFileProvider::CannedResourceFileProvider()
 std::map<std::string, std::string_view> CannedResourceFileProvider::createResources() {
     std::map<std::string, std::string_view> resources{
 		{
-			"opaque.vert",
+			"invalid.vert",
+			generic_transform
+		},
+		{
+			"undefined.vert",
+			generic_transform
+		},
+		{
+			"invalid.frag",
+			solid_white
+		},
+		{
+			"undefined.frag",
+			solid_white
+		},
+		{
+			"generic_transform.vert",
+			generic_transform
+		},
+		{
+			"opaque_pbr.frag",
 			""
 		},
 		{
-			"opaque.frag",
-			""
-		},
-		{
-			"transparent.vert",
-			""
-		},
-		{
-			"transparent.frag",
+			"transparent_pbr.frag",
 			""
 		},
     };

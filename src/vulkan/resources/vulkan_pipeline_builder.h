@@ -148,6 +148,7 @@ public:
 		VkGraphicsPipelineCreateInfo pipelineInfo{
 			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 			.stageCount = static_cast<uint32_t>(shaderStages.size()),
+			// TODO: looks like I neeed to build a linked list of shaders :(
 			.pStages = shaderStages.data()
 		};
 

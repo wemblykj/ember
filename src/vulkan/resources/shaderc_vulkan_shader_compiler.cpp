@@ -36,7 +36,7 @@ bool ShadercVulkanShaderCompiler::compileShaderModule(const std::string& sourceP
 
 	std::span spvWords(module.cbegin(), module.cend());
 
-	if (context_->createShaderModule(spvWords, shaderModule) != VK_SUCCESS) {
+	if (!context_->createShaderModule(spvWords, shaderModule)) {
 		EMBER_LOG_ERROR("vkCreateShaderModule failed for '{}'", sourcePath);
 		return false;
 	}

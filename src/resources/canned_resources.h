@@ -23,6 +23,7 @@ namespace CannedShader {
     constexpr ShaderID InvalidFragment = Invalid | Fragment;
     constexpr ShaderID UndefinedFragment = Undefined | Fragment;
 	constexpr ShaderID OpaquePBR = Fragment + 1;
+    constexpr ShaderID TransparentPBR = Fragment + 2;
 	/// @brief Base value for custom shaders.
 	constexpr ShaderID Custom = 0x8000;
 }

@@ -32,14 +32,14 @@ bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc&
 		desc.name = "canned.shader.invalid_vertex";
 		desc.type = ShaderType::Vertex;
 		desc.entryPoint = "main";
-		desc.sourcePath = "shaders/canned/generic_transform.vert";
+		desc.sourcePath = "shaders/canned/invalid.vert";
 		break;
 
 	case CannedShader::UndefinedVertex:
 		desc.name = "canned.shader.undefined_vertex";
 		desc.type = ShaderType::Vertex;
 		desc.entryPoint = "main";
-		desc.sourcePath = "shaders/canned/generic_transform.vert";
+		desc.sourcePath = "shaders/canned/undefined.vert";
 		break;
 
 	case CannedShader::GenericTransform:
@@ -53,14 +53,14 @@ bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc&
 		desc.name = "canned.shader.invalid_fragment";
 		desc.type = ShaderType::Fragment;
 		desc.entryPoint = "main";
-		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
+		desc.sourcePath = "shaders/canned/invalid.frag";
 		break;
 
 	case CannedShader::UndefinedFragment:
 		desc.name = "canned.shader.undefined_fragment";
 		desc.type = ShaderType::Fragment;
 		desc.entryPoint = "main";
-		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
+		desc.sourcePath = "shaders/canned/undefined.frag";
 		break;
 
 	case CannedShader::OpaquePBR:
@@ -68,6 +68,13 @@ bool DefaultCannedResourceProvider::GetShaderDescriptor(ShaderID id, ShaderDesc&
 		desc.type = ShaderType::Fragment;
 		desc.entryPoint = "main";
 		desc.sourcePath = "shaders/canned/opaque_pbr.frag";
+		break;
+
+	case CannedShader::TransparentPBR:
+		desc.name = "canned.shader.transparent_pbr";
+		desc.type = ShaderType::Fragment;
+		desc.entryPoint = "main";
+		desc.sourcePath = "shaders/canned/transparent_pbr.frag";
 		break;
 
 	default:

@@ -41,6 +41,7 @@ target_sources(ember_vulkan PRIVATE
     resources/vulkan_pipeline_builder.cpp
     resources/vulkan_resource_cache.cpp
     resources/default_vulkan_resource_builder.cpp
+    resources/default_vulkan_resource_file_provider.cpp
     resources/shaderc_vulkan_shader_compiler.cpp 
     vulkan_renderer.cpp
 )
@@ -66,6 +67,7 @@ target_sources(ember_vulkan PUBLIC
         resources/vulkan_pipeline_builder.h
         resources/vulkan_resource_builder.h
         resources/vulkan_resource_defs.h
+        resources/default_vulkan_resource_file_provider.h
         vulkan_renderer.h
  )
 

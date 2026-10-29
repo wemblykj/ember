@@ -5,12 +5,12 @@
 #include <platform/sdl3_window.h>
 
 #include <vulkan_renderer.h>
+#include <resources/default_vulkan_resource_file_provider.h>
 #include <presentation/vulkan_surface_provider_sdl3.h>
 
 #include <canned_resources.h>
 
 #include "native_file_provider.h"
-#include <canned_resource_file_provider.h>
 
 namespace ember::application {
 
@@ -35,7 +35,7 @@ bool Application::initialize(const platform::WindowConfig& windowConfig,
     }
 
     //fileProvider_ = std::make_shared<NativeFileProvider>("./resources");
-	fileProvider_ = std::make_shared<resources::CannedResourceFileProvider>();
+	fileProvider_ = std::make_shared<vulkan::resources::DefaultVulkanResourceFileProvider>();
 
     surfaceProvider_ = vulkan::createSDLSurfaceProvider(window_.get());
 

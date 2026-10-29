@@ -25,41 +25,29 @@ VulkanResourceCache::~VulkanResourceCache() {
 
 const ShaderRecord& VulkanResourceCache::resolveShader(ShaderID id) const
 {
-    if (id & CannedShader::Invalid) {
-        EMBER_LOG_WARN("Shader ID {} is undefined. Returning default shader.", id);
-        if (!assertShader(id)) {
+    if (!assertShader(id)) {
+        if (id & CannedShader::Invalid) {
             throw std::runtime_error("Default undefined shader is not registered in the resource cache.");
         }
 
-        return shaders_[id].record;
-    }
- 
-    if (!shaders_.contains(id)) {
-        if (!assertShader(id)) {
-            EMBER_LOG_WARN("Shader ID {} is not registered. Returning default shader.", id);
-			constexpr ShaderID TypeMask = CannedShader::Vertex | CannedShader::Fragment;
-            const ShaderID type = id & TypeMask;
-			return resolveShader(CannedShader::Undefined | type);
-        }
-    }
+        EMBER_LOG_WARN("Shader ID {} is not registered. Returning default shader.", id);
 
+        constexpr ShaderID TypeMask = CannedShader::Vertex | CannedShader::Fragment;
+        const ShaderID type = id & TypeMask;
+        return resolveShader(CannedShader::Undefined | type);
+    }
+    
     assert(shaders_.contains(id));
     return shaders_[id].record;
 }
 const TechniqueRecord& VulkanResourceCache::resolveTechnique(TechniqueID id) const
 {
-    if (id & CannedTechnique::Invalid) {
-        EMBER_LOG_WARN("Technique ID {} is undefined. Returning default technique.", id);
-
-		if (!assertTechnique(CannedTechnique::Undefined)) {
-			throw std::runtime_error("Default undefined technique is not registered in the resource cache.");
-		}
-
-        return techniques_[CannedTechnique::Undefined].record;
-	}
-
 	if (!techniques_.contains(id)) {
         if (!assertTechnique(id)) {
+            if (id & CannedTechnique::Invalid) {
+                throw std::runtime_error("Default undefined technique is not registered in the resource cache.");
+            }
+
             EMBER_LOG_WARN("Technique ID {} is not registered. Returning default technique.", id);
 			return resolveTechnique(CannedTechnique::Undefined);
         }
@@ -71,17 +59,11 @@ const TechniqueRecord& VulkanResourceCache::resolveTechnique(TechniqueID id) con
 
 const MaterialRecord& VulkanResourceCache::resolveMaterial(MaterialID id) const
 {
-    if (id & CannedMaterial::Invalid) {
-        EMBER_LOG_WARN("Material ID {} is undefined. Returning unassigned material.", id);
-
-		if (!assertMaterial(unassignedMaterialId_)) {
-			throw std::runtime_error("Default undefined material is not registered in the resource cache.");
-		}
-
-        return materials_[unassignedMaterialId_].record;
-	}
-
     if (!materials_.contains(id)) {
+        if (id & CannedMaterial::Invalid) {
+            throw std::runtime_error("Default undefined material is not registered in the resource cache.");
+        }
+
         EMBER_LOG_WARN("Material ID {} is not registered. Returning default material.", id);
         return resolveMaterial(unresolvedMaterialId_);
     }
@@ -92,17 +74,11 @@ const MaterialRecord& VulkanResourceCache::resolveMaterial(MaterialID id) const
 
 const GeometryRecord& VulkanResourceCache::resolveGeometry(GeometryID id) const
 {
-    if (id & CannedGeometry::Invalid) {
-        EMBER_LOG_WARN("Geometry ID {} is undefined. Returning default geometry.", id);
-
-		if (!assertGeometry(CannedGeometry::Undefined)) {
-			throw std::runtime_error("Default undefined geometry is not registered in the resource cache.");
-		}
-
-        return geometry_[CannedGeometry::Undefined].record;
-    }
-
     if (!geometry_.contains(id)) {
+        if (id & CannedGeometry::Invalid) {
+            throw std::runtime_error("Default undefined geometry is not registered in the resource cache.");
+        }
+
         EMBER_LOG_WARN("Geometry ID {} is not registered. Returning default geometry.", id);
         return resolveGeometry(CannedGeometry::Undefined);
     }
@@ -112,17 +88,11 @@ const GeometryRecord& VulkanResourceCache::resolveGeometry(GeometryID id) const
 }
 
 const VertexFormatRecord& VulkanResourceCache::resolveVertexFormat(VertexFormatID id) const {
-    if (id & CannedVertexFormat::Invalid) {
-        EMBER_LOG_WARN("VertexFormat ID {} is undefined. Returning default vertex format.", id);
-
-        if (!assertVertexFormat(CannedVertexFormat::Undefined)) {
+	if (!vertexFormats_.contains(id)) {
+        if (id & CannedVertexFormat::Invalid) {
             throw std::runtime_error("Default undefined vertex format is not registered in the resource cache.");
         }
 
-        return vertexFormats_[CannedVertexFormat::Undefined].record;
-    }
-
-	if (!vertexFormats_.contains(id)) {
         EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning default vertex format.", id);
 		return resolveVertexFormat(CannedVertexFormat::Undefined);
     }
@@ -194,10 +164,15 @@ bool VulkanResourceCache::assertShader(ShaderID id) const
                 return false;
 			}
 
-			return resourceBuilder_->buildShader(descriptor, shader);
+			if (!resourceBuilder_->buildShader(descriptor, shader)) {
+                EMBER_LOG_ERROR("Failed to build shader for canned shader ID {}", id);
+                return false;
+            }
         }
         
         const_cast<VulkanResourceCache*>(this)->addShader(CannedResourceGroup::Global, id, shader);
+
+        return true;
     } else {
         EMBER_LOG_WARN("Shader ID {} is not registered. Returning unassigned shader.", id);
     }
@@ -224,10 +199,15 @@ bool VulkanResourceCache::assertTechnique(TechniqueID id) const
                 return false;
             }
 
-            return resourceBuilder_->buildTechnique(descriptor, *this, technique);
+            if (!resourceBuilder_->buildTechnique(descriptor, *this, technique)) {
+                EMBER_LOG_ERROR("Failed to build technique for canned technique ID {}", id);
+                return false;
+            }
 		}
     	
         const_cast<VulkanResourceCache*>(this)->addTechnique(CannedResourceGroup::Global, id, technique);
+
+        return true;
     } else {
         EMBER_LOG_WARN("Technique ID {} is not registered. Returning unassigned technique.", id);
 	}
@@ -254,13 +234,14 @@ bool VulkanResourceCache::assertVertexFormat(VertexFormatID id) const {
         EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning default vertex format.", id);
 
         VertexFormatRecord vertexFormat{};
-        if (resourceBuilder_->buildCannedVertexFormat(id, vertexFormat)) {
-            const_cast<VulkanResourceCache*>(this)->addVertexFormat(CannedResourceGroup::Global, id, vertexFormat);
-
-            return true;
+        if (!resourceBuilder_->buildCannedVertexFormat(id, vertexFormat)) {
+            EMBER_LOG_ERROR("Failed to compile canned vertex format '{}'", id);
+            return false;
         }
         
-    	EMBER_LOG_ERROR("Failed to compile canned vertex format '{}'", id);
+        const_cast<VulkanResourceCache*>(this)->addVertexFormat(CannedResourceGroup::Global, id, vertexFormat);
+
+        return true;
     }
     else {
         EMBER_LOG_WARN("VertexFormat ID {} is not registered. Returning unassigned vertex format.", id);
