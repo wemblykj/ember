@@ -4,7 +4,7 @@
 #include <vector>
 #include <cstdint>
 
-#include <ember_math.h>
+#include <math/ember_math.hpp>
 
 #include <resource_types.h>
 #include <canned_resources.h>

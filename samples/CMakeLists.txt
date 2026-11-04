@@ -21,8 +21,8 @@ target_compile_features(ember_sample PRIVATE cxx_std_20)
 
 target_precompile_headers(ember_sample PRIVATE
     <string>
-    <ember_core.h>
-    <ember_math.h>
+    <core/ember_core.hpp>
+    <math/ember_math.hpp>
     <ember_platform.h>
     <ember_resources.h>
     <ember_graphics.h>

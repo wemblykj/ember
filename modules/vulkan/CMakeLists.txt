@@ -91,8 +91,8 @@ target_link_libraries(ember_vulkan PUBLIC
 
 target_precompile_headers(ember_vulkan PRIVATE
     <string>
-    <ember_core.h>
-    <ember_math.h>
+    <core/ember_core.hpp>
+    <math/ember_math.hpp>
     <ember_platform.h>
     <ember_graphics.h>
 )
