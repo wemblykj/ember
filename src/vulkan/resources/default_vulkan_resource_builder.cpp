@@ -67,10 +67,6 @@ bool DefaultVulkanResourceBuilder::buildTechnique(const TechniqueDesc& desc, con
 		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.fragment))
 		.withShaderStage(resourceResolver.resolveShader(desc.shaderStages.compute));
 
-	if (!builder.validate()) {
-		return false;
-	}
-
 	technique.pipeline = builder
 		.withDevice(context_->getDevice())
 		.build();
