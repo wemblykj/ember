@@ -1,6 +1,6 @@
 #include "application.h"
 
-#include <logger.h>
+#include <core/logger.hpp>
 
 #include <platform/sdl3_window.h>
 

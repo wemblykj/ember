@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL_vulkan.h>
 
-#include <logger.h>
+#include <core/logger.hpp>
 
 namespace ember::platform::sdl3 {
 

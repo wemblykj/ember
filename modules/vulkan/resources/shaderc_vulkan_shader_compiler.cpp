@@ -1,8 +1,8 @@
 #include "shaderc_vulkan_shader_compiler.h"
 
-#include <logger.h>
+#include <core/logger.hpp>
 
-#include "cleanup_stack.h"
+#include <core/cleanup_stack.hpp>
 
 using namespace ember::core;
 using namespace ember::resources;

@@ -1,21 +1,24 @@
 add_library(ember_core STATIC
-    logger.cpp
+    src/logger.cpp
 )
 
 target_sources(ember_core PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
-        ember_core.h
-        logger.h
-        scope_guard.h
-        cleanup_stack.h
-        graphics_types.h
-        graphics_api.h
+        include/core/ember_core.hpp
+        include/core/logger.hpp
+        include/core/scope_guard.hpp
+        include/core/cleanup_stack.hpp
+        include/core/graphics_types.hpp
+        include/core/graphics_api.hpp
 )
 
-target_include_directories(ember_core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+target_include_directories(ember_core 
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(ember_core PUBLIC 
@@ -24,5 +27,5 @@ target_link_libraries(ember_core PUBLIC
 
 target_precompile_headers(ember_core PRIVATE
     <string>
-    "ember_core.h"
+    <core/ember_core.hpp>
 )

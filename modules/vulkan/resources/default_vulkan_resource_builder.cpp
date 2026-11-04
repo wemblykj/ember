@@ -1,8 +1,8 @@
 #include "default_vulkan_resource_builder.h"
 
-#include <logger.h>
+#include <core/logger.hpp>
+#include <core/cleanup_stack.hpp>
 
-#include "cleanup_stack.h"
 #include "vulkan_pipeline_builder.h"
 
 using namespace ember::core;

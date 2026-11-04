@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <graphics_types.h>
+#include <core/graphics_types.hpp>
 
 #include "resource_types.h"
 #include "canned_resources.h"

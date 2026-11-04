@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include <graphics_api.h>
+#include <core/graphics_api.hpp>
 
 #include <resource_cache.h>
 

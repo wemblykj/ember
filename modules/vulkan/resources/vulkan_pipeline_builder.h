@@ -4,10 +4,10 @@
 
 #include <vulkan/vulkan.h>
 
-#include <logger.h>
+#include <core/logger.hpp>
+#include <core/action.hpp>
 
 #include "vulkan_resource_defs.h"
-#include <action.h>
 
 namespace ember::vulkan {
 

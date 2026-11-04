@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 
-#include <logger.h>
+#include <core/logger.hpp>
 #include <resource_file_provider.h>
 #include <default_canned_resource_provider.h>
 

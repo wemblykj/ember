@@ -13,16 +13,8 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithD
 # Include directories for CMake modules (must be before find_package if you ship Find*.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Add source subdirectories
-add_subdirectory(src/core)
-add_subdirectory(src/math)
-add_subdirectory(src/platform)
-add_subdirectory(src/resources)
-add_subdirectory(src/graphics)
-add_subdirectory(src/application)
-add_subdirectory(src/vulkan)
-add_subdirectory(src/sdl2)
-add_subdirectory(src/sdl3)
+# Add modules
+add_subdirectory(modules)
 
 # Add samples
 add_subdirectory(samples)

@@ -1,6 +1,6 @@
 #include "vulkan_resource_cache.h"
 
-#include <logger.h>
+#include <core/logger.hpp>
 
 #include "canned_resource_provider.h"
 

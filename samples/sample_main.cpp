@@ -1,6 +1,6 @@
 //#include "sample_scene.h"
 
-#include <logger.h>
+#include <core/logger.hpp>
 #include <window.h>
 #include <application.h>
 #include <renderer.h>

@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include <logger.h>
+#include <core/logger.hpp>
 
 namespace {
 	struct QuadVertex {
