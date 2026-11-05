@@ -95,69 +95,62 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::withShaderStage(const ShaderRecord
 	return *this;
 }
 
-VkPipeline VulkanPipelineBuilder::build() {
+VkPipeline VulkanPipelineBuilder::build() const {
 	if (!validateFundamentals()) {
 		throw std::runtime_error("Pipeline validation failed");
 	}
 
-	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-	shaderStages.reserve(configureShaderStages_.size());
-
-	bool hasVertex = false, hasFragment = false, hasCompute = false;
-	for (auto& configureShaderStage : configureShaderStages_) {
-		auto& createInfo = shaderStages.emplace_back();
-		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-
-		configureShaderStage.invoke(createInfo);
+	auto shaderStages = buildShaderStages();
+	if (!validateShaderStages(shaderStages)) {
+		throw std::runtime_error("Pipeline validation failed: invalid shader stages");
 	}
 
-	validateShaderStages(shaderStages);
-
-	auto pDepthStencilState = std::make_unique<VkPipelineDepthStencilStateCreateInfo>();
-	pDepthStencilState->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	if (configureDepthStencilState_) {
-		auto& createInfo = *pDepthStencilState;
-		configureDepthStencilState_.invoke(createInfo);
-
-		if (!validateDepthStencilState(createInfo)) {
-			throw std::runtime_error("Pipeline validation failed: invalid depth stencil state");
-		}
+	auto pVertexInputState = buildVertexInputState();
+	if (!validateVertexInputState(*pVertexInputState)) {
+		throw std::runtime_error("Pipeline validation failed: invalid vertex input state");
 	}
 
-	auto pColorBlendState = std::make_unique<VkPipelineColorBlendStateCreateInfo>();
-	pColorBlendState->sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	if (configureColorBlendState_) {
-		auto& createInfo = *pColorBlendState;
-		configureColorBlendState_.invoke(createInfo);
-
-		if (!validateColorBlendState(*pColorBlendState)) {
-			throw std::runtime_error("Pipeline validation failed: invalid blend state");
-		}
+	auto pInputAssemblyState = buildInputAssemblyState();
+	if (!validateInputAssemblyState(*pInputAssemblyState)) {
+		throw std::runtime_error("Pipeline validation failed: invalid input assembly state");
 	}
 
-	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
-	colorBlendAttachmentStates.reserve(configureColorBlendAttachments_.size());
+	auto pViewportState = buildViewportState();
+	if (!validateViewportState(*pViewportState)) {
+		throw std::runtime_error("Pipeline validation failed: invalid viewport state");
+	}
 
-	if (configureColorBlendAttachments_.size() > 0) {
-		for (auto& configureAttachment : configureColorBlendAttachments_) {
-			auto& attachmentState = colorBlendAttachmentStates.emplace_back();
-			configureAttachment.invoke(attachmentState);
-		}
+	auto pRasterizationState = buildRasterizationState();
 
-		if (!validateColorBlendAttachmentStates(colorBlendAttachmentStates)) {
-			throw std::runtime_error("Pipeline validation failed: invalid blend state");
-		}
+	auto pDepthStencilState = buildDepthStencilState();
+	if (!validateDepthStencilState(*pDepthStencilState)) {
+		throw std::runtime_error("Pipeline validation failed: invalid depth stencil state");
+	}
 
-		pColorBlendState->attachmentCount = static_cast<uint32_t>(colorBlendAttachmentStates.size());
-		pColorBlendState->pAttachments = colorBlendAttachmentStates.data();
+	auto colorBlendAttachmentStates = buildColorBlendAttachmentStates();
+	auto pColorBlendState = buildColorBlendState(colorBlendAttachmentStates);
+
+	if (!validateColorBlendState(*pColorBlendState)) {
+		throw std::runtime_error("Pipeline validation failed: invalid color blend state");
+	}
+
+	auto pDynamicState = buildDynamicState();
+	if (!validateDynamicState(*pDynamicState)) {
+		throw std::runtime_error("Pipeline validation failed: invalid dynamic state");
 	}
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 		.stageCount = static_cast<uint32_t>(shaderStages.size()),
 		.pStages = shaderStages.data(),
+		.pVertexInputState = pVertexInputState.get(),
+		.pInputAssemblyState = pInputAssemblyState.get(),
+		.pViewportState = pViewportState.get(),
+		.pRasterizationState = pRasterizationState.get(),
 		.pDepthStencilState = pDepthStencilState.get(),
-		.pColorBlendState = pColorBlendState.get()
+		.pColorBlendState = pColorBlendState.get(),
+		.pDynamicState = pDynamicState.get(),
+		
 	};
 
 	VkPipeline pipeline;
@@ -193,7 +186,7 @@ bool VulkanPipelineBuilder::validateShaderStages(const std::span<VkPipelineShade
 	return true;
 }
 
-bool VulkanPipelineBuilder::validateFundamentals() {
+bool VulkanPipelineBuilder::validateFundamentals() const {
 	if (device_ == VK_NULL_HANDLE) {
 		EMBER_LOG_ERROR("Pipeline builder requires a valid Vulkan device");
 		return false;
@@ -207,11 +200,54 @@ bool VulkanPipelineBuilder::validateFundamentals() {
 	return true;
 }
 
+bool VulkanPipelineBuilder::validateVertexInputState(const VkPipelineVertexInputStateCreateInfo& vertexInputState) {
+	return true;
+}
+
+bool VulkanPipelineBuilder::validateInputAssemblyState(const VkPipelineInputAssemblyStateCreateInfo& inputAssemblyState) {
+	return true;
+}
+
+bool VulkanPipelineBuilder::validateViewportState(const VkPipelineViewportStateCreateInfo& viewportState) {
+	return true;
+}
+
+bool VulkanPipelineBuilder::validateRasterizationState(const VkPipelineRasterizationStateCreateInfo& rasterizationState) {
+	return true;
+}
+
+bool VulkanPipelineBuilder::validateMultisampleState(const VkPipelineMultisampleStateCreateInfo& multisampleState) {
+	return true;
+}
+
+bool VulkanPipelineBuilder::validateDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
+	if (depthStencilState.depthTestEnable && !depthStencilState.depthWriteEnable) {
+		EMBER_LOG_WARN("Depth test is enabled but depth write is disabled");
+	}
+
+	return true;
+}
+
 bool VulkanPipelineBuilder::validateColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& attachmentState) {
 	if (attachmentState.blendEnable && attachmentState.colorWriteMask == 0) {
 		EMBER_LOG_ERROR("Color blend attachment state has blending enabled but no color write mask set");
 		return false;
 	}
+	return true;
+}
+
+bool VulkanPipelineBuilder::validateColorBlendAttachmentStates(const std::span<VkPipelineColorBlendAttachmentState>& attachmentStates) {
+	if (attachmentStates.empty()) {
+		EMBER_LOG_ERROR("Color blend state has logicOp enabled but no attachments set");
+		return false;
+	}
+
+	for (const auto& attachmentState : attachmentStates) {
+		if (!validateColorBlendAttachmentState(attachmentState)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -231,27 +267,102 @@ bool VulkanPipelineBuilder::validateColorBlendState(const VkPipelineColorBlendSt
 	return true;
 }
 
-bool VulkanPipelineBuilder::validateColorBlendAttachmentStates(const std::span<VkPipelineColorBlendAttachmentState>& attachmentStates) {
-	if (attachmentStates.empty()) {
-		EMBER_LOG_ERROR("Color blend state has logicOp enabled but no attachments set");
-		return false;
-	}
-
-	for (const auto& attachmentState : attachmentStates) {
-		if (!validateColorBlendAttachmentState(attachmentState)) {
-			return false;
-		}
-	}
-
+bool VulkanPipelineBuilder::validateDynamicState(const VkPipelineDynamicStateCreateInfo& dynamicState) {
 	return true;
 }
 
-bool VulkanPipelineBuilder::validateDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& depthStencilState) {
-	if (depthStencilState.depthTestEnable && !depthStencilState.depthWriteEnable) {
-		EMBER_LOG_WARN("Depth test is enabled but depth write is disabled");
+std::vector<VkPipelineShaderStageCreateInfo> VulkanPipelineBuilder::buildShaderStages() const {
+	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
+	shaderStages.reserve(configureShaderStages_.size());
+	for (auto& configureShaderStage : configureShaderStages_) {
+		auto& createInfo = shaderStages.emplace_back();
+		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+
+		configureShaderStage.invoke(createInfo);
 	}
 
-	return true;
+	return shaderStages;
 }
 
+std::unique_ptr<VkPipelineDynamicStateCreateInfo> VulkanPipelineBuilder::buildDynamicState() const {
+	auto pDynamicState = std::make_unique<VkPipelineDynamicStateCreateInfo>();
+	pDynamicState->sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+
+	return pDynamicState;
 }
+
+std::unique_ptr<VkPipelineVertexInputStateCreateInfo> VulkanPipelineBuilder::buildVertexInputState() const {
+	auto pVertexInputState = std::make_unique<VkPipelineVertexInputStateCreateInfo>();
+	pVertexInputState->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+	return pVertexInputState;
+}
+
+std::unique_ptr<VkPipelineViewportStateCreateInfo> VulkanPipelineBuilder::buildViewportState() const {
+	auto pViewportState = std::make_unique<VkPipelineViewportStateCreateInfo>();
+	pViewportState->sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+
+	return pViewportState;
+}
+
+std::unique_ptr<VkPipelineRasterizationStateCreateInfo> VulkanPipelineBuilder::buildRasterizationState() const {
+	auto pRasterizationState = std::make_unique<VkPipelineRasterizationStateCreateInfo>();
+	pRasterizationState->sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+
+	return pRasterizationState;
+}
+
+std::unique_ptr<VkPipelineMultisampleStateCreateInfo> VulkanPipelineBuilder::buildMultisampleState() const {
+	auto pMultisampleState = std::make_unique<VkPipelineMultisampleStateCreateInfo>();
+	pMultisampleState->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	return pMultisampleState;
+}
+
+std::unique_ptr<VkPipelineInputAssemblyStateCreateInfo> VulkanPipelineBuilder::buildInputAssemblyState() const {
+	auto pInputAssemblyState = std::make_unique<VkPipelineInputAssemblyStateCreateInfo>();
+	pInputAssemblyState->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+
+	return pInputAssemblyState;
+}
+
+std::unique_ptr<VkPipelineDepthStencilStateCreateInfo> VulkanPipelineBuilder::buildDepthStencilState() const {
+	auto pDepthStencilState = std::make_unique<VkPipelineDepthStencilStateCreateInfo>();
+	pDepthStencilState->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+	if (configureDepthStencilState_) {
+		auto& createInfo = *pDepthStencilState;
+		configureDepthStencilState_.invoke(createInfo);
+	}
+
+	return pDepthStencilState;
+}
+
+std::vector<VkPipelineColorBlendAttachmentState> VulkanPipelineBuilder::buildColorBlendAttachmentStates() const {
+	std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
+
+	attachmentStates.reserve(configureColorBlendAttachments_.size());
+	for (auto& configureAttachmentState : configureColorBlendAttachments_) {
+		auto& attachmentState = attachmentStates.emplace_back();
+		configureAttachmentState.invoke(attachmentState);
+	}
+
+	return attachmentStates;
+}
+
+std::unique_ptr<VkPipelineColorBlendStateCreateInfo> ember::vulkan::VulkanPipelineBuilder::buildColorBlendState(const std::span<VkPipelineColorBlendAttachmentState> attachmentStates) const {
+	auto pColorBlendState = std::make_unique<VkPipelineColorBlendStateCreateInfo>();
+	pColorBlendState->sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+
+	if (configureColorBlendState_) {
+		auto& createInfo = *pColorBlendState;
+		configureColorBlendState_.invoke(createInfo);
+	}
+
+	pColorBlendState->attachmentCount = static_cast<uint32_t>(attachmentStates.size());	
+	pColorBlendState->pAttachments = attachmentStates.data();
+
+	return pColorBlendState;
+}
+
+} // namespace ember::vulkan

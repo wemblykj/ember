@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <span>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -24,16 +26,33 @@ public:
 	VulkanPipelineBuilder& addShaderStage(core::Action<VkPipelineShaderStageCreateInfo&>::Callback configure);
 	VulkanPipelineBuilder& withShaderStage(const ShaderRecord& record);
 
-	VkPipeline build();
+	VkPipeline build() const;
 
 private:	
-	bool validateShaderStages(const std::span<VkPipelineShaderStageCreateInfo>& shaderStages);
-	bool validateFundamentals();
-	bool validateColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& attachmentState);
-	bool validateColorBlendState(const VkPipelineColorBlendStateCreateInfo& colorBlendState);
-	bool validateColorBlendAttachmentStates(const std::span<VkPipelineColorBlendAttachmentState>& attachmentStates);
-	bool validateDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& depthStencilState);
+	std::vector<VkPipelineShaderStageCreateInfo> buildShaderStages() const;	
+	std::unique_ptr<VkPipelineVertexInputStateCreateInfo> buildVertexInputState() const;
+	std::unique_ptr<VkPipelineViewportStateCreateInfo> buildViewportState() const;
+	std::unique_ptr<VkPipelineRasterizationStateCreateInfo> buildRasterizationState() const;
+	std::unique_ptr<VkPipelineMultisampleStateCreateInfo> buildMultisampleState() const;
+	std::unique_ptr<VkPipelineInputAssemblyStateCreateInfo> buildInputAssemblyState() const;
+	std::unique_ptr<VkPipelineDepthStencilStateCreateInfo> buildDepthStencilState() const;
+	std::vector<VkPipelineColorBlendAttachmentState> buildColorBlendAttachmentStates() const;
+	std::unique_ptr<VkPipelineColorBlendStateCreateInfo> buildColorBlendState(const std::span<VkPipelineColorBlendAttachmentState> attachmentStates) const;
+	std::unique_ptr<VkPipelineDynamicStateCreateInfo> buildDynamicState() const;
 
+	bool validateFundamentals() const;
+	static bool validateShaderStages(const std::span<VkPipelineShaderStageCreateInfo>& shaderStages);
+	static bool validateVertexInputState(const VkPipelineVertexInputStateCreateInfo& vertexInputState);
+	static bool validateViewportState(const VkPipelineViewportStateCreateInfo& viewportState);
+	static bool validateRasterizationState(const VkPipelineRasterizationStateCreateInfo& rasterizationState);
+	static bool validateMultisampleState(const VkPipelineMultisampleStateCreateInfo& multisampleState);
+	static bool validateInputAssemblyState(const VkPipelineInputAssemblyStateCreateInfo& inputAssemblyState);
+	static bool validateDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& depthStencilState);
+	static bool validateColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& attachmentState);
+	static bool validateColorBlendAttachmentStates(const std::span<VkPipelineColorBlendAttachmentState>& attachmentStates);
+	static bool validateColorBlendState(const VkPipelineColorBlendStateCreateInfo& colorBlendState);
+	static bool validateDynamicState(const VkPipelineDynamicStateCreateInfo& dynamicState);
+	
 	VkDevice device_ = VK_NULL_HANDLE;
 	core::Action<VkPipelineColorBlendStateCreateInfo&> configureColorBlendState_;
 	std::vector<core::Action<VkPipelineColorBlendAttachmentState&>> configureColorBlendAttachments_;
