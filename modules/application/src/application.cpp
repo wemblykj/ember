@@ -7,8 +7,8 @@
 #include <sdl3/platform/sdl3_window.hpp>
 #include <sdl3/presentation/vulkan_surface_provider_sdl3.hpp>
 
-#include <vulkan_renderer.h>
-#include <resources/default_vulkan_resource_file_provider.h>
+#include <vulkan/vulkan_renderer.hpp>
+#include <vulkan/resources/default_vulkan_resource_file_provider.hpp>
 
 #include <application/native_file_provider.hpp>
 

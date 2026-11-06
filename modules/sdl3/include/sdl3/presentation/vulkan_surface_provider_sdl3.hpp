@@ -1,6 +1,6 @@
 #pragma once
 
-#include <presentation/vulkan_surface_provider.h>
+#include <vulkan/presentation/vulkan_surface_provider.hpp>
 
 #include <memory>
 
@@ -10,8 +10,8 @@
 
 #include <platform/window.hpp>
 
-#include "vulkan_defs.h"
-#include "context/vulkan_instance.h"
+#include <vulkan/vulkan_defs.hpp>
+#include <vulkan/vulkan_instance.hpp>
 
 namespace ember::vulkan {
 

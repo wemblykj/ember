@@ -31,51 +31,56 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Graphics sources
 target_sources(ember_vulkan PRIVATE
-    context/vulkan_instance.cpp
-    context/scoped_vulkan_instance.cpp
-    context/vulkan_context_vma.cpp
-    context/any_physical_device_selector.cpp
-    context/ranked_physical_device_selector.cpp
-    context/default_physical_device_enumerator.cpp
-    context/default_physical_device_selector.cpp
-    resources/vulkan_pipeline_builder.cpp
-    resources/vulkan_resource_cache.cpp
-    resources/default_vulkan_resource_builder.cpp
-    resources/default_vulkan_resource_file_provider.cpp
-    resources/shaderc_vulkan_shader_compiler.cpp 
-    vulkan_renderer.cpp
+
+    src/vulkan_instance.cpp
+    src/scoped_vulkan_instance.cpp
+    src/vulkan_renderer.cpp
+    src/context/vulkan_context_vma.cpp
+    src/context/any_physical_device_selector.cpp
+    src/context/ranked_physical_device_selector.cpp
+    src/context/default_physical_device_enumerator.cpp
+    src/context/default_physical_device_selector.cpp
+    src/pipeline/vulkan_pipeline_builder.cpp
+    src/pipeline/shaderc_vulkan_shader_compiler.cpp 
+    src/resources/vulkan_resource_cache.cpp
+    src/resources/default_vulkan_resource_builder.cpp
+    src/resources/default_vulkan_resource_file_provider.cpp
 )
 
 # Private headers
 target_sources(ember_vulkan PRIVATE
-    resources/vulkan_format_mapping.h
+    src/resources/vulkan_format_mapping.hpp
 )
 
 target_sources(ember_vulkan PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
-        vulkan_defs.h
-        context/physical_device.h
-        context/vulkan_instance.h
-        context/scoped_vulkan_instance.h
-        context/vulkan_context.h
-        context/any_physical_device_selector.h
-        context/default_physical_device_selector.h
-        context/ranked_physical_device_selector.h
-        presentation/vulkan_surface_provider.h
-        resources/vulkan_pipeline_builder.h
-        resources/vulkan_resource_builder.h
-        resources/vulkan_resource_defs.h
-        resources/default_vulkan_resource_file_provider.h
-        vulkan_renderer.h
- )
-
-target_include_directories(ember_vulkan PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Vulkan_INCLUDE_DIRS}
+        include/vulkan/vulkan_defs.hpp
+        include/vulkan/vulkan_instance.hpp
+        include/vulkan/scoped_vulkan_instance.hpp
+        include/vulkan/vulkan_renderer.hpp
+        include/vulkan/context/physical_device.hpp
+        include/vulkan/context/vulkan_context.hpp
+        include/vulkan/context/any_physical_device_selector.hpp
+        include/vulkan/context/default_physical_device_selector.hpp
+        include/vulkan/context/ranked_physical_device_selector.hpp
+        include/vulkan/pipeline/vulkan_pipeline_builder.hpp
+        include/vulkan/resources/vulkan_resource_builder.hpp
+        include/vulkan/resources/vulkan_resource_defs.hpp
+        include/vulkan/resources/default_vulkan_resource_file_provider.hpp
+        include/vulkan/presentation/vulkan_surface_provider.hpp
 )
 
+target_include_directories(ember_vulkan 
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        ${Vulkan_INCLUDE_DIRS}
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+ 
 target_link_libraries(ember_vulkan PRIVATE
     Vulkan::Vulkan
     GPUOpen::VulkanMemoryAllocator
