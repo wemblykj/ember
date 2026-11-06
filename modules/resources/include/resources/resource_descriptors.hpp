@@ -7,8 +7,8 @@
 
 #include <core/graphics_types.hpp>
 
-#include "resource_types.h"
-#include "canned_resources.h"
+#include "resource_types.hpp"
+#include "canned_resources.hpp"
 
 namespace ember::resources {
 

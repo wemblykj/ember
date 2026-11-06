@@ -27,7 +27,7 @@ target_link_libraries(ember_application PUBLIC
 target_precompile_headers(ember_application PRIVATE
     <string>
     <core/ember_core.hpp>
-    <ember_platform.h>
-    <ember_resources.h>
+    <platform/ember_platform.hpp>
+    <resources/ember_resources.hpp>
     <ember_graphics.h>
 )

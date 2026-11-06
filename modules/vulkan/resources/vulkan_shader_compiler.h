@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <resource_types.h>
+#include <resources/resource_types.hpp>
 
 using ShaderDesc = ember::resources::ShaderDesc;
 

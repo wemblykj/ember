@@ -1,7 +1,8 @@
 //#include "sample_scene.h"
 
 #include <core/logger.hpp>
-#include <window.h>
+#include <platform/window.hpp>
+
 #include <application.h>
 #include <renderer.h>
 

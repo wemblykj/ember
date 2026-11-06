@@ -2,7 +2,7 @@
 
 #include <core/logger.hpp>
 
-#include "canned_resource_provider.h"
+#include <resources/canned_resource_provider.hpp>
 
 using namespace ember::resources;
 

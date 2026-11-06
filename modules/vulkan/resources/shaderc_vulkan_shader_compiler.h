@@ -6,7 +6,7 @@
 
 #include <shaderc/shaderc.hpp>
 
-#include <resource_file_provider.h>
+#include <resources/resource_file_provider.hpp>
 
 #include "context/vulkan_context.h"
 

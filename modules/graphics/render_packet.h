@@ -6,8 +6,8 @@
 
 #include <math/ember_math.hpp>
 
-#include <resource_types.h>
-#include <canned_resources.h>
+#include <resources/resource_types.hpp>
+#include <resources/canned_resources.hpp>
 
 namespace ember::graphics {
 

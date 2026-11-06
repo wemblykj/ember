@@ -1,6 +1,6 @@
 #pragma once
 
-#include <resource_types.h>
+#include <resources/resource_types.hpp>
 
 using ShaderID = ember::resources::ShaderID;
 using TechniqueID = ember::resources::TechniqueID;

@@ -3,12 +3,13 @@
 #include <core/logger.hpp>
 
 #include <platform/sdl3_window.h>
+#include <resources/canned_resources.hpp>
 
 #include <vulkan_renderer.h>
 #include <resources/default_vulkan_resource_file_provider.h>
 #include <presentation/vulkan_surface_provider_sdl3.h>
 
-#include <canned_resources.h>
+
 
 #include "native_file_provider.h"
 

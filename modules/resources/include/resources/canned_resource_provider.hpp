@@ -1,7 +1,7 @@
 #pragma once
 
-#include "resource_types.h"
-#include "resource_descriptors.h"
+#include "resource_types.hpp"
+#include "resource_descriptors.hpp"
 
 namespace ember::resources {
 

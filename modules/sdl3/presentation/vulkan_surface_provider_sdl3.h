@@ -8,7 +8,8 @@
 
 #include <surface_provider.h>
 
-#include "window.h"
+#include <platform/window.hpp>
+
 #include "vulkan_defs.h"
 #include "context/vulkan_instance.h"
 

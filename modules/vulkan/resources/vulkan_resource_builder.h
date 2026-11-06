@@ -1,6 +1,6 @@
 #pragma once
 
-#include <resource_types.h>
+#include <resources/resource_types.hpp>
 
 #include "vulkan_resource_defs.h"
 #include "vulkan_resource_resolver.h"

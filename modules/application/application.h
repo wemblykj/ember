@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include <window.h>
-#include <renderer.h>
+#include <platform/window.hpp>
+#include <resources/resource_file_provider.hpp>
 
-#include "resource_file_provider.h"
+#include <renderer.h>
 
 namespace ember::application {
 

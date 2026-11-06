@@ -5,9 +5,9 @@
 
 #include <vulkan/vulkan.h>
 
-#include <resource_types.h>
-#include <resource_cache.h>
-#include <canned_resource_provider.h>
+#include <resources/resource_types.hpp>
+#include <resources/resource_cache.hpp>
+#include <resources/canned_resource_provider.hpp>
 
 #include "../context/vulkan_context.h"
 

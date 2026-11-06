@@ -20,7 +20,7 @@ if (EMBER_BUILD_SDL2)
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
         ember_sdl2.h
-        platform/sdl2_window.h
+        platform/sdl2_window.hpp
     )
 
     target_include_directories(ember_sdl2 PUBLIC
@@ -36,7 +36,7 @@ if (EMBER_BUILD_SDL2)
     target_precompile_headers(ember_sdl2 PRIVATE
         <string>
         <core/ember_core.hpp>
-        <ember_platform.h>
+        <platform/ember_platform.hpp>
     )
 endif()
 

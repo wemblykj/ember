@@ -1,4 +1,4 @@
-#include "sdl2_window.h"
+#include "sdl2_window.hpp"
 #include "../../core/logger.h"
 
 namespace ember::platform::sdl2 {

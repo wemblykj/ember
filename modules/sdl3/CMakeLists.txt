@@ -36,6 +36,6 @@ if (EMBER_BUILD_SDL3)
     target_precompile_headers(ember_sdl3 PRIVATE
         <string>
         <core/ember_core.hpp>
-        <ember_platform.h>
+        <platform/ember_platform.hpp>
     )
 endif()

@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <resource_types.h>
+#include <resource_types.hpp>
 
 namespace ember::vulkan {
 

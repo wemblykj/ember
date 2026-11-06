@@ -93,6 +93,7 @@ target_precompile_headers(ember_vulkan PRIVATE
     <string>
     <core/ember_core.hpp>
     <math/ember_math.hpp>
-    <ember_platform.h>
+    <resources/ember_resources.hpp>
+    <platform/ember_platform.hpp>
     <ember_graphics.h>
 )

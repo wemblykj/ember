@@ -5,7 +5,7 @@
 
 #include <core/graphics_api.hpp>
 
-#include <resource_cache.h>
+#include <resources/resource_cache.hpp>
 
 #include <surface_provider.h>
 

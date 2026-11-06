@@ -1,3 +1,3 @@
 #pragma once
 
-#include "platform/sdl2_window.h"
+#include "platform/sdl2_window.hpp"

@@ -1,4 +1,4 @@
-#include "canned_resource_file_provider.h"
+#include <resources/canned_resource_file_provider.hpp>
 
 namespace {
 

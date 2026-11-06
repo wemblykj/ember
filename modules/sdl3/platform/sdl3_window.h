@@ -1,6 +1,6 @@
 #pragma once
 
-#include <window.h>
+#include <platform/window.hpp>
 
 #include <cstdint>
 #include <memory>

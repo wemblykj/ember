@@ -1,4 +1,4 @@
-#include "default_canned_resource_provider.h"
+#include <resources/default_canned_resource_provider.hpp>
 
 #include <stdexcept>
 

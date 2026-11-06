@@ -1,8 +1,8 @@
 #pragma once
 
-#include "canned_resource_provider.h"
+#include "canned_resource_provider.hpp"
 
-#include "resource_types.h"
+#include "resource_types.hpp"
 
 namespace ember::resources {
 

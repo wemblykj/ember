@@ -3,7 +3,7 @@
 #include <string_view>
 #include <map>
 
-#include <dictionary_based_file_provider.h>
+#include <resources/dictionary_based_file_provider.hpp>
 
 namespace ember::vulkan::resources {
 

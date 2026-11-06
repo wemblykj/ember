@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-#include <resource_file_provider.h>
+#include "resource_file_provider.hpp"
 
 namespace ember::resources {
 

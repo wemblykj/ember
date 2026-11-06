@@ -5,8 +5,8 @@
 #include <memory>
 
 #include <core/logger.hpp>
-#include <resource_file_provider.h>
-#include <default_canned_resource_provider.h>
+#include <resources/resource_file_provider.hpp>
+#include <resources/default_canned_resource_provider.hpp>
 
 #include "context/default_physical_device_selector.h"
 #include "context/vulkan_context_vma.h"

@@ -5,8 +5,8 @@
 #include <memory>
 #include <vector>
 
-#include <resource_cache.h>
-#include <resource_file_provider.h>
+#include <resources/resource_cache.hpp>
+#include <resources/resource_file_provider.hpp>
 
 #include "context/vulkan_context.h"
 #include "resources/vulkan_resource_cache.h"

@@ -23,7 +23,7 @@ target_precompile_headers(ember_sample PRIVATE
     <string>
     <core/ember_core.hpp>
     <math/ember_math.hpp>
-    <ember_platform.h>
-    <ember_resources.h>
+    <platform/ember_platform.hpp>
+    <resources/ember_resources.hpp>
     <ember_graphics.h>
 )

@@ -4,8 +4,8 @@
 
 #include <memory>
 
-#include <resource_types.h>
-#include <resource_file_provider.h>
+#include <resources/resource_types.hpp>
+#include <resources/resource_file_provider.hpp>
 
 #include "context/vulkan_context.h"
 

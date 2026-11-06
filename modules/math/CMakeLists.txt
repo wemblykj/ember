@@ -11,7 +11,8 @@ target_sources(ember_math INTERFACE
 find_package(glm REQUIRED)
 
 target_include_directories(ember_math INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
     ${GLM_INCLUDE_DIRS}
 )
 
