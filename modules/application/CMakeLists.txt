@@ -1,17 +1,20 @@
 add_library(ember_application STATIC
-    application.cpp
-    native_file_provider.cpp
+    "src/application.cpp"
+    "src/native_file_provider.cpp"
 )
 
 target_sources(ember_application PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
-        application.h
+        "include/application/ember_application.hpp"
+        "include/application/application.hpp"
+        "include/application/native_file_provider.hpp"
 )
 
 target_include_directories(ember_application PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(ember_application PUBLIC
@@ -30,4 +33,5 @@ target_precompile_headers(ember_application PRIVATE
     <platform/ember_platform.hpp>
     <resources/ember_resources.hpp>
     <graphics/ember_graphics.hpp>
+    <application/ember_application.hpp>
 )

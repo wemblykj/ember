@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include <platform/window.hpp>
 #include <resources/resource_file_provider.hpp>
 

@@ -3,7 +3,7 @@
 #include <core/logger.hpp>
 #include <platform/window.hpp>
 
-#include <application.h>
+#include <application/ember_application.hpp>
 #include <graphics/renderer.hpp>
 
 using namespace ember::application;

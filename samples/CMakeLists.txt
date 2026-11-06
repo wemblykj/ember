@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 add_executable(ember_sample
-    sample_main.cpp
-    sample_scene.cpp
+    "src/sample_main.cpp"
 )
 
 target_include_directories(ember_sample PRIVATE
