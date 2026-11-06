@@ -2,7 +2,7 @@ option(EMBER_BUILD_SDL2 "Build with SDL2 support" OFF)
 
 if (EMBER_BUILD_SDL2)
     add_library(ember_sdl2 STATIC
-        platform/sdl2_window.cpp
+        src/platform/sdl2_window.cpp
     )
 
 	find_package(SDL2 REQUIRED)
@@ -19,12 +19,13 @@ if (EMBER_BUILD_SDL2)
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
-        ember_sdl2.h
-        platform/sdl2_window.hpp
+        include/sdl2/ember_sdl2.h
+        include/sdl2/platform/sdl2_window.hpp
     )
 
-    target_include_directories(ember_sdl2 PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+   target_include_directories(ember_platform INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
     )
 
     target_link_libraries(ember_sdl2 PUBLIC

@@ -1,4 +1,4 @@
-#include "sdl3_window.h"
+#include <sdl3/platform/sdl3_window.hpp>
 
 #include <SDL3/SDL_vulkan.h>
 

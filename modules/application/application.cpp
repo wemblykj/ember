@@ -2,12 +2,12 @@
 
 #include <core/logger.hpp>
 
-#include <platform/sdl3_window.h>
+#include <sdl3/platform/sdl3_window.hpp>
 #include <resources/canned_resources.hpp>
 
 #include <vulkan_renderer.h>
 #include <resources/default_vulkan_resource_file_provider.h>
-#include <presentation/vulkan_surface_provider_sdl3.h>
+#include <sdl3/presentation/vulkan_surface_provider_sdl3.hpp>
 
 
 
