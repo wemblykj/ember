@@ -1,6 +1,6 @@
 #pragma once
 
-#include <renderer.h>
+#include <graphics/renderer.hpp>
 
 #include <memory>
 #include <vector>

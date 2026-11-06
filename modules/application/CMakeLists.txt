@@ -29,5 +29,5 @@ target_precompile_headers(ember_application PRIVATE
     <core/ember_core.hpp>
     <platform/ember_platform.hpp>
     <resources/ember_resources.hpp>
-    <ember_graphics.h>
+    <graphics/ember_graphics.hpp>
 )

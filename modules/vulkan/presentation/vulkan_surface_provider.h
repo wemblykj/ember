@@ -1,11 +1,10 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include <vulkan/vulkan.h>
 
-#include <surface_provider.h>
+#include <graphics/presentation/surface_provider.hpp>
 
 #include "vulkan_defs.h"
 #include "context/vulkan_instance.h"

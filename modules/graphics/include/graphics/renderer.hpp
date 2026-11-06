@@ -7,9 +7,9 @@
 
 #include <resources/resource_cache.hpp>
 
-#include <surface_provider.h>
+#include "presentation/surface_provider.hpp"
 
-#include "render_packet.h"
+#include "pipeline/render_packet.hpp"
 
 namespace ember::graphics {
 

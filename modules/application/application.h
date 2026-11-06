@@ -5,7 +5,7 @@
 #include <platform/window.hpp>
 #include <resources/resource_file_provider.hpp>
 
-#include <renderer.h>
+#include <graphics/renderer.hpp>
 
 namespace ember::application {
 

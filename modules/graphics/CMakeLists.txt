@@ -4,17 +4,19 @@ add_library(ember_graphics INTERFACE)
 target_sources(ember_graphics PRIVATE
 )
 
-target_sources(ember_graphics PUBLIC
+target_sources(ember_graphics INTERFACE
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES
-        render_packet.h
-        renderer.h
-        surface_provider.h
+        "include/graphics/ember_graphics.hpp"
+        "include/graphics/renderer.hpp"
+        "include/graphics/pipeline/render_packet.hpp"
+        "include/graphics/presentation/surface_provider.hpp"
  )
 
 target_include_directories(ember_graphics INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(ember_graphics INTERFACE

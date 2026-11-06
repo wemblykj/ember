@@ -6,7 +6,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <surface_provider.h>
+#include <graphics/presentation/surface_provider.hpp>
 
 #include <platform/window.hpp>
 

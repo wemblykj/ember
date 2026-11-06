@@ -19,7 +19,7 @@ if (EMBER_BUILD_SDL3)
             include/sdl3/presentation/vulkan_surface_provider_sdl3.hpp
     )
 
-    target_include_directories(ember_platform INTERFACE
+    target_include_directories(ember_sdl3 PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
     )

@@ -23,7 +23,7 @@ if (EMBER_BUILD_SDL2)
         include/sdl2/platform/sdl2_window.hpp
     )
 
-   target_include_directories(ember_platform INTERFACE
+   target_include_directories(ember_sdl2 INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
     )

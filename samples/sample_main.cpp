@@ -4,7 +4,7 @@
 #include <platform/window.hpp>
 
 #include <application.h>
-#include <renderer.h>
+#include <graphics/renderer.hpp>
 
 using namespace ember::application;
 
