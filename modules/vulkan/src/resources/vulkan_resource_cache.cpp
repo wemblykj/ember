@@ -40,6 +40,7 @@ const ShaderRecord& VulkanResourceCache::resolveShader(ShaderID id) const
     assert(shaders_.contains(id));
     return shaders_[id].record;
 }
+
 const TechniqueRecord& VulkanResourceCache::resolveTechnique(TechniqueID id) const
 {
 	if (!techniques_.contains(id)) {
@@ -105,9 +106,7 @@ void VulkanResourceCache::clearAllResources() {
 	for (auto& [id, entry] : shaders_) { resourceBuilder_->destroyShader(entry.record); }
     for (auto& [id, entry] : materials_) { resourceBuilder_->destroyMaterial(entry.record); }
     for (auto& [id, entry] : techniques_) { resourceBuilder_->destroyTechnique(entry.record); }
-    for (auto& [id, entry] : geometry_) {
-        resourceBuilder_->destroyGeometry(entry.record, entry.allocation);
-    }
+    for (auto& [id, entry] : geometry_) { resourceBuilder_->destroyGeometry(entry.record, entry.allocation); }
 	for (auto& [id, entry] : vertexFormats_) { resourceBuilder_->destroyVertexFormat(entry.record); }
 
 	shaders_.clear();
