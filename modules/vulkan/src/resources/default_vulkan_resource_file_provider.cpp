@@ -1,5 +1,9 @@
 #include <vulkan/resources/default_vulkan_resource_file_provider.hpp>
 
+// TODO: there looks like a great repository of PD shaders here:
+// https://github.com/SaschaWillems/Vulkan
+// See the Credits.md document for full attribution and license information for the shaders used in this project.
+
 namespace {
 
 const char* generic_transform = R"tag(
